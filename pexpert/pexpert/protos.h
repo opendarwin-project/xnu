@@ -42,7 +42,7 @@
 
 //------------------------------------------------------------------------
 // from ppc/misc_protos.h
-extern void printf(const char *fmt, ...) __printflike(1, 2);
+extern int printf(const char *fmt, ...) __printflike(1, 2);
 
 extern void interrupt_enable(void);
 extern void interrupt_disable(void);

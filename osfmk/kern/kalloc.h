@@ -69,6 +69,15 @@
 #include <kern/counter.h>
 #endif /* XNU_KERNEL_PRIVATE */
 
+#ifndef __has_builtin
+#define __has_builtin(x) 0
+#endif
+
+#define XNU_HAVE_KALLOC_TYPE_BUILTINS \
+	(__has_builtin(__builtin_xnu_type_summary) && \
+	__has_builtin(__builtin_xnu_type_signature) && \
+	__has_builtin(__builtin_xnu_types_compatible))
+
 __BEGIN_DECLS __ASSUME_PTR_ABI_SINGLE_BEGIN
 
 /*!
@@ -773,6 +782,13 @@ extern void kfree_shared_data_addr(
 
 #endif
 
+#if defined(__cplusplus)
+#define KALLOC_TYPE_COMPILER_TYPES_COMPATIBLE(a, b) __is_same(a, b)
+#else
+#define KALLOC_TYPE_COMPILER_TYPES_COMPATIBLE(a, b) \
+	__builtin_types_compatible_p(a, b)
+#endif
+
 /*!
  * @enum kt_granule_t
  *
@@ -858,8 +874,16 @@ __options_decl(kt_granule_t, uint32_t, {
  *
  * @param type          The type to analyze
  */
+#if XNU_HAVE_KALLOC_TYPE_BUILTINS
 #define KT_SUMMARY_GRANULES(type) \
 	(__builtin_xnu_type_summary(type) & KT_SUMMARY_MASK_TYPE_BITS)
+#else
+/*
+ * Non-Apple Clang lacks XNU's typed-allocation builtins. In that case,
+ * disable layout-derived classification and fall back to untyped sites.
+ */
+#define KT_SUMMARY_GRANULES(type) 0xffffffffu
+#endif
 
 /*!
  * @macro KALLOC_TYPE_SIG_CHECK
@@ -920,9 +944,15 @@ __options_decl(kt_granule_t, uint32_t, {
  * @param ptr           the pointer whose type needs to be checked.
  * @param type          the type which the pointer will be checked against.
  */
+#if XNU_HAVE_KALLOC_TYPE_BUILTINS
 #define KALLOC_TYPE_IS_COMPATIBLE_PTR(ptr, type)                         \
 	(__builtin_xnu_types_compatible(os_get_pointee_type(ptr), type) ||   \
-	    __builtin_xnu_types_compatible(os_get_pointee_type(ptr), void))  \
+	    __builtin_xnu_types_compatible(os_get_pointee_type(ptr), void))
+#else
+#define KALLOC_TYPE_IS_COMPATIBLE_PTR(ptr, type)                           \
+	(KALLOC_TYPE_COMPILER_TYPES_COMPATIBLE(os_get_pointee_type(ptr), type) || \
+	    KALLOC_TYPE_COMPILER_TYPES_COMPATIBLE(os_get_pointee_type(ptr), void))
+#endif
 
 #define KALLOC_TYPE_ASSERT_COMPATIBLE_POINTER(ptr, type) \
 	_Static_assert(KALLOC_TYPE_IS_COMPATIBLE_PTR(ptr, type), \
@@ -1645,10 +1675,14 @@ kt_size(vm_size_t s1, vm_size_t s2, vm_size_t c2)
  * args can be used to provide other types in the allocation, to make the
  * decision of whether to emit the signature.
  */
+#if XNU_HAVE_KALLOC_TYPE_BUILTINS
 #define KALLOC_TYPE_EMIT_SIG(sig_type, ...)                              \
 	(KALLOC_TYPE_CHECK(KT_SUMMARY_MASK_DATA, sig_type, ##__VA_ARGS__) || \
 	KALLOC_TYPE_VM_SIZE_CHECK(sig_type, ##__VA_ARGS__))?                 \
 	"" : __builtin_xnu_type_signature(sig_type)
+#else
+#define KALLOC_TYPE_EMIT_SIG(sig_type, ...) ""
+#endif
 
 /*
  * Kalloc type flags are adjusted to indicate if the type is "data-only" or

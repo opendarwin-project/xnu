@@ -45,7 +45,7 @@
 extern addr64_t kvtophys(vm_offset_t va);
 #endif /* defined(KERNEL_INTEGRITY_KTRR) || defined(KERNEL_INTEGRITY_CTRR) || defined(KERNEL_INTEGRITY_PV_CTRR) */
 
-#include <sys/types.h>
+#include <types.h>
 
 SECURITY_READ_ONLY_LATE(static int) DTInitialized;
 SECURITY_READ_ONLY_LATE(RealDTEntry) DTRootNode;

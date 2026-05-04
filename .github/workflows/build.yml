@@ -1,0 +1,19 @@
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - canon
+  merge_group:
+    branches:
+      - canon
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: bazel-contrib/setup-bazel@0.19.0
+        with:
+          disk-cache: true
+          repository-cache: true
+      - run: bazel build --platforms=//:macos_x86_64 //:kernel

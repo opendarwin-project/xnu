@@ -36,6 +36,8 @@
 
 __BEGIN_DECLS
 
+typedef bool (^coalition_for_each_task_block_t)(task_t task);
+
 #if CONFIG_COALITIONS
 
 void coalitions_init(void);
@@ -96,8 +98,6 @@ void task_coalition_thread_group_game_mode_update(task_t task);
 void task_coalition_thread_group_carplay_mode_update(task_t task);
 void task_coalition_thread_group_application_set(task_t task);
 #endif /* CONFIG_THREAD_GROUPS */
-
-typedef bool (^coalition_for_each_task_block_t)(task_t task);
 
 void coalition_for_each_task(coalition_t coal,
     coalition_for_each_task_block_t block);

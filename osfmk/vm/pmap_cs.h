@@ -79,7 +79,6 @@ pmap_ce_free_acceleration_buffer(
 #include <vm/pmap.h>
 #include <kern/lock_rw.h>
 #include <libkern/image4/dlxk.h>
-#include <TrustCache/API.h>
 
 
 #if PMAP_CS
@@ -95,6 +94,8 @@ pmap_ce_free_acceleration_buffer(
 #endif
 
 #if PMAP_CS_PPL_MONITOR
+
+#include <TrustCache/API.h>
 
 /*
  * XNU_MONITOR and PMAP_CS are both defined for the same targets in board_config.h.

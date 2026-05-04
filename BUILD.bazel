@@ -5,7 +5,10 @@ package(default_visibility = ["//visibility:public"])
 
 exports_files([
     "libkern/stack_protector.c",
+    "early_crc32_support.c",
     "iokit/Kernel/IOHibernateRestoreKernel.c",
+    "early_string_support.c",
+    "early_vm_support.c",
 ])
 
 # Dummy headers for config options
@@ -14,7 +17,6 @@ DUMMY_HEADERS = [
     ("debug", "build_config/debug.h", "DEBUG"),
     ("mach_assert", "build_config/mach_assert.h", "MACH_ASSERT"),
     ("zleaks", "build_config/zleaks.h", "ZLEAKS"),
-    ("mach_kdp", "build_config/mach_kdp.h", "MACH_KDP"),
     ("config_serial_kdp", "build_config/config_serial_kdp.h", "CONFIG_SERIAL_KDP"),
     ("importance_inheritance", "build_config/importance_inheritance.h", "IMPORTANCE_INHERITANCE"),
     ("importance_debug", "build_config/importance_debug.h", "IMPORTANCE_DEBUG"),
@@ -31,8 +33,82 @@ DUMMY_HEADERS = [
 [dummy_header(name = n, out = o, define = d) for n, o, d in DUMMY_HEADERS]
 
 dummy_header(name = "pthread_h", out = "build_config/pthread.h")
+dummy_header(name = "mach_kdp_h", out = "build_config/mach_kdp.h")
 dummy_header(name = "kcov_data_h", out = "build_config/san/kcov_data.h")
 dummy_header(name = "kasan_h", out = "build_config/san/kasan.h")
+
+genrule(
+    name = "kernel_version_h",
+    outs = ["build_config/libkern/version.h"],
+    cmd = """cat > $@ <<'EOF'
+#ifndef LIBKERN_VERSION_H
+#define LIBKERN_VERSION_H
+
+#define VERSION_MAJOR 0
+#define VERSION_MINOR 0
+#define VERSION_VARIANT "bazel"
+#define VERSION_REVISION 0
+#define VERSION_STAGE_DEV 0x20
+#define VERSION_STAGE_ALPHA 0x40
+#define VERSION_STAGE_BETA 0x60
+#define VERSION_STAGE_RELEASE 0x80
+#define VERSION_STAGE VERSION_STAGE_DEV
+#define VERSION_PRERELEASE_LEVEL 0
+#define OSBUILD_CONFIG "bazel"
+#define OSTYPE "Darwin"
+#define OSRELEASE "0.0"
+
+#ifndef ASSEMBLER
+#if defined(__cplusplus)
+extern "C" {
+#endif
+extern const int version_major;
+extern const int version_minor;
+extern const char version_variant[];
+extern const int version_revision;
+extern const int version_stage;
+extern const int version_prerelease_level;
+extern const char osbuild_config[];
+extern const char ostype[];
+extern const char osrelease[];
+extern const char osbuilder[];
+extern const char version[];
+#define OSVERSIZE 256
+extern char osversion[];
+#if defined(__cplusplus)
+}
+#endif
+#endif
+
+#endif
+EOF""",
+)
+
+genrule(
+    name = "kernel_version_c",
+    outs = ["build_config/version.c"],
+    cmd = """cat > $@ <<'EOF'
+#include <libkern/version.h>
+
+const char __kernelVersionString[] __attribute__((used)) =
+    "@(#)VERSION: " OSTYPE " Kernel Version " OSRELEASE ": bazel; bazel:/home/theo/src/dfs/deps/xnu";
+const char version[] =
+    OSTYPE " Kernel Version " OSRELEASE ": bazel; bazel:/home/theo/src/dfs/deps/xnu";
+const int version_major = VERSION_MAJOR;
+const int version_minor = VERSION_MINOR;
+const int version_revision = VERSION_REVISION;
+const int version_stage = VERSION_STAGE;
+const int version_prerelease_level = VERSION_PRERELEASE_LEVEL;
+const char version_variant[] = VERSION_VARIANT;
+const char osbuild_config[] = OSBUILD_CONFIG;
+const char osbuilder[] = "bazel";
+const char osrelease[] = OSRELEASE;
+const char ostype[] = OSTYPE;
+char osversion[OSVERSIZE];
+
+__private_extern__ const char compiler_version[] = __VERSION__;
+EOF""",
+)
 
 filegroup(
     name = "external_headers_filegroup",
@@ -44,6 +120,8 @@ filegroup(
     name = "config_header_files",
     srcs = [o for n, o, d in DUMMY_HEADERS] + [
         "build_config/pthread.h",
+        "build_config/mach_kdp.h",
+        "build_config/libkern/version.h",
         "build_config/san/kcov_data.h",
         "build_config/san/kasan.h",
     ],
@@ -62,7 +140,6 @@ platform(
     ],
 )
 
-# Common kernel flags identified from Meson
 COMMON_KERNEL_FLAGS = [
     "-I.",
     "-nostdlibinc",
@@ -75,13 +152,18 @@ COMMON_KERNEL_FLAGS = [
     "-DXNU_KERNEL_PRIVATE=1",
     "-DMACH_KERNEL_PRIVATE=1",
     "-DMACH_BSD=1",
+    "-DMACH_KDP=1",
     "-DPRIVATE=1",
+    "-DXNU_TARGET_OS_OSX=1",
     "-D__MACHO__=1",
     "-fblocks",
     "-DCONFIG_SCHED_TRADITIONAL=1",
     "-DCONFIG_SCHED_MULTIQ=1",
     "-DCONFIG_SCHED_CLUTCH=1",
     "-DCONFIG_SCHED_TIMESHARE_CORE=1",
+    "-DCONFIG_THREAD_MAX=2560",
+    "-DCONFIG_TASK_MAX=1024",
+    "-DKPERF=1",
     "-DCC_INTERNAL_SDK=1",
 ]
 
@@ -92,8 +174,37 @@ X86_64_FLAGS = [
     "-D__X86_64__",
     "-DLP64",
     "-DPAGE_SIZE_FIXED",
+    "-DKERNEL_BASE_OFFSET=0x100000",
     "-mkernel",
     "-msoft-float",
+]
+
+cc_library(
+    name = "kernel_version_support",
+    srcs = [":kernel_version_c"],
+    hdrs = [":kernel_version_h"],
+    includes = ["build_config"],
+    copts = COMMON_KERNEL_FLAGS + X86_64_FLAGS,
+    deps = [":config_headers"],
+)
+
+PEXPERT_BOOT_FLAGS = COMMON_KERNEL_FLAGS + [
+    "-DPEXPERT_KERNEL_PRIVATE=1",
+]
+
+PEXPERT_BOOT_INCLUDE_FLAGS = [
+    "-Ibuild_config",
+    "-IEXTERNAL_HEADERS",
+    "-Ilibkern",
+    "-Ilibkern/libkern",
+    "-Iosfmk",
+    "-Iosfmk/kern",
+    "-Iosfmk/mach",
+    "-Iosfmk/i386",
+    "-Iosfmk/x86_64",
+    "-Ibsd",
+    "-Iiokit",
+    "-Ipexpert",
 ]
 
 filegroup(
@@ -111,6 +222,14 @@ cc_library(
     hdrs = ["san/memory/memintrinsics.h"],
     include_prefix = "san",
     strip_include_prefix = "san/memory",
+    visibility = ["//visibility:public"],
+)
+
+cc_library(
+    name = "san_kcov_headers",
+    hdrs = glob(["san/coverage/**/*.h"]),
+    include_prefix = "san",
+    strip_include_prefix = "san/coverage",
     visibility = ["//visibility:public"],
 )
 
@@ -136,7 +255,31 @@ cc_library(
         "libkern/libkern/i386",
     ],
     copts = COMMON_KERNEL_FLAGS + X86_64_FLAGS,
-    deps = [":config_headers", ":san_memintrinsics", "//osfmk:clock_headers"],
+    deps = [":config_headers", ":san_memintrinsics", ":san_kcov_headers", "//osfmk:system_mach_headers", "//osfmk:clock_headers"],
+)
+
+cc_library(
+    name = "pexpert_headers",
+    hdrs = [":all_headers"],
+    includes = [
+        "build_config",
+        "EXTERNAL_HEADERS",
+        "libkern",
+        "libkern/libkern",
+        "osfmk",
+        "osfmk/kern",
+        "osfmk/mach",
+        "bsd",
+        "san/memory",
+        "iokit",
+        "pexpert",
+        "osfmk/i386",
+        "osfmk/x86_64",
+        "bsd/i386",
+        "libkern/libkern/i386",
+    ],
+    copts = COMMON_KERNEL_FLAGS + X86_64_FLAGS,
+    deps = [":config_headers", ":san_memintrinsics", ":san_kcov_headers", "//osfmk:system_mach_headers", "//osfmk:clock_headers"],
 )
 
 KERNEL_LINK_FLAGS = [
@@ -214,10 +357,122 @@ cc_library(
     linkstatic = True,
 )
 
+cc_library(
+    name = "kcformat_support",
+    srcs = [
+        "pexpert/gen/kcformat.c",
+    ],
+    copts = COMMON_KERNEL_FLAGS + X86_64_FLAGS,
+    deps = [":common_headers"],
+    linkstatic = True,
+)
+
+cc_library(
+    name = "kernel_mach_header_support",
+    srcs = [
+        "libkern/kernel_mach_header.c",
+    ],
+    copts = COMMON_KERNEL_FLAGS + X86_64_FLAGS,
+    deps = [":common_headers"],
+    linkstatic = True,
+)
+
+cc_library(
+    name = "os_log_support",
+    srcs = [
+        "libkern/os/log.c",
+        "bsd/kern/subr_log.c",
+    ],
+    copts = COMMON_KERNEL_FLAGS + X86_64_FLAGS,
+    deps = [":pexpert_headers"],
+    linkstatic = True,
+)
+
+cc_library(
+    name = "early_log_support",
+    srcs = [
+        "early_log_support.c",
+    ],
+    copts = COMMON_KERNEL_FLAGS + X86_64_FLAGS,
+    deps = [":pexpert_headers"],
+    linkstatic = True,
+)
+
+cc_library(
+    name = "early_string_support",
+    srcs = [
+        "early_string_support.c",
+    ],
+    copts = COMMON_KERNEL_FLAGS + X86_64_FLAGS,
+    deps = [":pexpert_headers"],
+    linkstatic = True,
+)
+
+cc_library(
+    name = "early_vm_support",
+    srcs = [
+        "early_vm_support.c",
+    ],
+    copts = COMMON_KERNEL_FLAGS + X86_64_FLAGS,
+    deps = [":pexpert_headers"],
+    linkstatic = True,
+)
+
+cc_library(
+    name = "crc32_support",
+    srcs = [
+        "early_crc32_support.c",
+    ],
+    copts = COMMON_KERNEL_FLAGS + X86_64_FLAGS,
+    deps = [":pexpert_headers"],
+    linkstatic = True,
+)
+
+cc_library(
+    name = "pexpert_gen_support",
+    srcs = [
+        "pexpert/gen/bootargs.c",
+        "pexpert/gen/device_tree.c",
+        "pexpert/gen/pe_gen.c",
+        "pexpert/i386/pe_bootargs.c",
+        "pexpert/i386/pe_identify_machine.c",
+        "pexpert/i386/pe_serial.c",
+    ],
+    copts = PEXPERT_BOOT_FLAGS + X86_64_FLAGS + PEXPERT_BOOT_INCLUDE_FLAGS,
+    deps = [":common_headers"],
+    linkstatic = True,
+)
+
+cc_library(
+    name = "pexpert_init_support",
+    srcs = [
+        "pexpert/i386/pe_init.c",
+    ],
+    copts = PEXPERT_BOOT_FLAGS + X86_64_FLAGS + PEXPERT_BOOT_INCLUDE_FLAGS,
+    deps = [":common_headers"],
+    linkstatic = True,
+)
+
+cc_library(
+    name = "pexpert_kprintf_support",
+    srcs = [
+        "pexpert/i386/pe_kprintf.c",
+    ],
+    copts = PEXPERT_BOOT_FLAGS + X86_64_FLAGS + PEXPERT_BOOT_INCLUDE_FLAGS,
+    deps = [":common_headers"],
+    linkstatic = True,
+)
+
 cc_binary(
     name = "kernel",
     deps = [
         "//osfmk:osfmk_start",
+        ":kcformat_support",
+        ":early_log_support",
+        ":kernel_mach_header_support",
+        ":pexpert_gen_support",
+        ":pexpert_init_support",
+        ":pexpert_kprintf_support",
         ":iokit_hibernate",
     ],
     linkopts = KERNEL_LINK_FLAGS,

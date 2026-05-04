@@ -31,7 +31,7 @@
  */
 
 #include <console/video_console.h>
-#include <sys/types.h>
+#include <types.h>
 #include <mach/vm_param.h>
 #include <machine/machine_routines.h>
 #include <pexpert/protos.h>

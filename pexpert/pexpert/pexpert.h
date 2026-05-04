@@ -44,16 +44,16 @@ __BEGIN_DECLS
 #include <mach/kern_return.h>
 #include <mach/machine/vm_types.h>
 
-#ifdef PEXPERT_KERNEL_PRIVATE
-#include <pexpert/protos.h>
-#endif
-#include <pexpert/boot.h>
-
-#if     defined(PEXPERT_KERNEL_PRIVATE) || defined(IOKIT_KERNEL_PRIVATE)
+#if defined(PEXPERT_KERNEL_PRIVATE) || defined(IOKIT_KERNEL_PRIVATE)
 typedef void *cpu_id_t;
 #else
 typedef void *cpu_id_t;
 #endif
+
+#ifdef PEXPERT_KERNEL_PRIVATE
+#include <pexpert/protos.h>
+#endif
+#include <pexpert/boot.h>
 
 #if XNU_KERNEL_PRIVATE
 #if defined(__arm__) || defined(__arm64__)
