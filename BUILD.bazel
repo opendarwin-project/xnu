@@ -1,0 +1,207 @@
+load("@rules_cc//cc:defs.bzl", "cc_library", "cc_binary")
+load("//bazel:rules.bzl", "dummy_header")
+
+package(default_visibility = ["//visibility:public"])
+
+exports_files([
+    "libkern/stack_protector.c",
+    "iokit/Kernel/IOHibernateRestoreKernel.c",
+])
+
+# Dummy headers for config options
+DUMMY_HEADERS = [
+    ("mach_ldebug", "build_config/mach_ldebug.h", "MACH_LDEBUG"),
+    ("debug", "build_config/debug.h", "DEBUG"),
+    ("mach_assert", "build_config/mach_assert.h", "MACH_ASSERT"),
+    ("zleaks", "build_config/zleaks.h", "ZLEAKS"),
+    ("mach_kdp", "build_config/mach_kdp.h", "MACH_KDP"),
+    ("config_serial_kdp", "build_config/config_serial_kdp.h", "CONFIG_SERIAL_KDP"),
+    ("importance_inheritance", "build_config/importance_inheritance.h", "IMPORTANCE_INHERITANCE"),
+    ("importance_debug", "build_config/importance_debug.h", "IMPORTANCE_DEBUG"),
+    ("config_dtrace", "build_config/config_dtrace.h", "CONFIG_DTRACE"),
+    ("no_kextd", "build_config/no_kextd.h", "NO_KEXTD"),
+    ("config_quiesce_counter", "build_config/config_quiesce_counter.h", "CONFIG_QUIESCE_COUNTER"),
+    ("config_cpu_counters", "build_config/config_cpu_counters.h", "CONFIG_CPU_COUNTERS"),
+    ("config_user_notification", "build_config/config_user_notification.h", "CONFIG_USER_NOTIFICATION"),
+    ("config_kdp_interactive_debugging", "build_config/config_kdp_interactive_debugging.h", "CONFIG_KDP_INTERACTIVE_DEBUGGING"),
+    ("config_voucher_deprecated", "build_config/config_voucher_deprecated.h", "CONFIG_VOUCHER_DEPRECATED"),
+    ("config_kdp_coredump_encryption", "build_config/config_kdp_coredump_encryption.h", "CONFIG_KDP_COREDUMP_ENCRYPTION"),
+]
+
+[dummy_header(name = n, out = o, define = d) for n, o, d in DUMMY_HEADERS]
+
+dummy_header(name = "pthread_h", out = "build_config/pthread.h")
+dummy_header(name = "kcov_data_h", out = "build_config/san/kcov_data.h")
+dummy_header(name = "kasan_h", out = "build_config/san/kasan.h")
+
+filegroup(
+    name = "config_header_files",
+    srcs = [o for n, o, d in DUMMY_HEADERS] + [
+        "build_config/pthread.h",
+        "build_config/san/kcov_data.h",
+        "build_config/san/kasan.h",
+    ],
+)
+
+cc_library(
+    name = "config_headers",
+    hdrs = [":config_header_files"],
+)
+
+platform(
+    name = "macos_x86_64",
+    constraint_values = [
+        "@platforms//cpu:x86_64",
+        "@platforms//os:macos",
+    ],
+)
+
+# Common kernel flags identified from Meson
+COMMON_KERNEL_FLAGS = [
+    "-I.",
+    "-nostdlibinc",
+    "-fno-builtin",
+    "-fno-common",
+    "-DAPPLE=1",
+    "-DKERNEL=1",
+    "-D_KERNEL=1",
+    "-DKERNEL_PRIVATE=1",
+    "-DXNU_KERNEL_PRIVATE=1",
+    "-DMACH_KERNEL_PRIVATE=1",
+    "-DMACH_BSD=1",
+    "-DPRIVATE=1",
+    "-D__MACHO__=1",
+    "-fblocks",
+    "-DCONFIG_SCHED_TRADITIONAL=1",
+    "-DCONFIG_SCHED_MULTIQ=1",
+    "-DCONFIG_SCHED_CLUTCH=1",
+    "-DCONFIG_SCHED_TIMESHARE_CORE=1",
+    "-DCC_INTERNAL_SDK=1",
+]
+
+X86_64_FLAGS = [
+    "-target", "x86_64-apple-darwin",
+    "-Dx86_64",
+    "-DX86_64",
+    "-D__X86_64__",
+    "-DLP64",
+    "-DPAGE_SIZE_FIXED",
+    "-mkernel",
+    "-msoft-float",
+]
+
+filegroup(
+    name = "all_headers",
+    srcs = [
+        "//osfmk:osfmk_headers",
+        ":config_header_files",
+    ] + glob([
+        "**/*.h",
+    ], allow_empty = True),
+)
+
+cc_library(
+    name = "common_headers",
+    hdrs = [":all_headers"],
+    includes = [
+        "build_config",
+        "EXTERNAL_HEADERS",
+        "libkern",
+        "libkern/libkern",
+        "osfmk",
+        "osfmk/kern",
+        "osfmk/mach",
+        "bsd",
+        "osfmk/libsa",
+        "iokit",
+        "pexpert",
+        "osfmk/i386",
+        "osfmk/x86_64",
+        "bsd/i386",
+        "libkern/libkern/i386",
+    ],
+    copts = COMMON_KERNEL_FLAGS + X86_64_FLAGS,
+    deps = [":config_headers"],
+)
+
+KERNEL_LINK_FLAGS = [
+    "-target", "x86_64-apple-darwin",
+    "-fuse-ld=lld",
+    "-nostdlib",
+    "-Wl,-e,__start",
+    "-Wl,-sectalign,__TEXT,__text,0x1000",
+    "-Wl,-sectalign,__DATA,__common,0x1000",
+    "-Wl,-sectalign,__DATA,__bss,0x1000",
+    "-Wl,-sectcreate,__PRELINK_TEXT,__text,/dev/null",
+    "-Wl,-segprot,__PRELINK_TEXT,r-x,r-x",
+    "-Wl,-sectcreate,__PRELINK_INFO,__info,/dev/null",
+    "-Wl,-pagezero_size,0x0",
+    "-Wl,-version_load_command",
+    "-Wl,-function_starts",
+    "-Wl,-headerpad,152",
+    "-Wl,-pie",
+    "-Wl,-segaddr,__HIB,0xffffff8000100000",
+    "-Wl,-image_base,0xffffff8000200000",
+    "-Wl,-seg_page_size,__TEXT,0x200000",
+    "-Wl,-sectalign,__HIB,__bootPT,0x1000",
+    "-Wl,-sectalign,__HIB,__desc,0x1000",
+    "-Wl,-sectalign,__HIB,__data,0x1000",
+    "-Wl,-sectalign,__HIB,__text,0x1000",
+    "-Wl,-sectalign,__HIB,__const,0x1000",
+    "-Wl,-sectalign,__HIB,__bss,0x1000",
+    "-Wl,-sectalign,__HIB,__common,0x1000",
+    "-Wl,-sectalign,__HIB,__llvm_prf_cnts,0x1000",
+    "-Wl,-sectalign,__HIB,__llvm_prf_names,0x1000",
+    "-Wl,-sectalign,__HIB,__llvm_prf_data,0x1000",
+    "-Wl,-sectalign,__HIB,__textcoal_nt,0x1000",
+    "-Wl,-sectalign,__HIB,__cstring,0x1000",
+    "-Wl,-sectalign,__DATA,__percpu,0x1000",
+    "-Wl,-rename_section,__DATA,__const,__DATA_CONST,__const",
+    "-Wl,-segprot,__DATA_CONST,r--,r--",
+    "-Wl,-rename_section,__KLD,__const,__KLDDATA,__const",
+    "-Wl,-rename_section,__KLD,__cstring,__KLDDATA,__cstring",
+    "-Wl,-segprot,__KLDDATA,rw-,rw-",
+    "-Wl,-segprot,__KLD,r-x,r-x",
+    "-Wl,-no_zero_fill_sections",
+    "-Wl,-add_split_seg_info",
+]
+
+cc_library(
+    name = "iokit_hibernate",
+    srcs = ["iokit/Kernel/IOHibernateRestoreKernel.c"],
+    copts = [
+        "-target", "x86_64-apple-darwin",
+        "-nostdlibinc",
+        "-fno-builtin",
+        "-fno-common",
+        "-DAPPLE=1",
+        "-DKERNEL=1",
+        "-D_KERNEL=1",
+        "-DIOKIT_KERNEL_PRIVATE=1",
+        "-D__MACHO__=1",
+        "-fblocks",
+        "-DCONFIG_SCHED_TRADITIONAL=1",
+        "-DCONFIG_SCHED_MULTIQ=1",
+        "-DCONFIG_SCHED_CLUTCH=1",
+        "-DCONFIG_SCHED_TIMESHARE_CORE=1",
+        "-DCC_INTERNAL_SDK=1",
+        "-Dx86_64",
+        "-DX86_64",
+        "-D__X86_64__",
+        "-DLP64",
+        "-DPAGE_SIZE_FIXED",
+        "-mkernel",
+        "-msoft-float",
+    ],
+    deps = [":common_headers"],
+    linkstatic = True,
+)
+
+cc_binary(
+    name = "kernel",
+    deps = [
+        "//osfmk:osfmk_start",
+        ":iokit_hibernate",
+    ],
+    linkopts = KERNEL_LINK_FLAGS,
+)

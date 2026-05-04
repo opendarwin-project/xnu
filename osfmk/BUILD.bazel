@@ -1,0 +1,107 @@
+load("@rules_cc//cc:defs.bzl", "cc_library")
+load("//bazel:rules.bzl", "genassym")
+
+package(default_visibility = ["//visibility:public"])
+
+# Common kernel flags from root
+COMMON_KERNEL_FLAGS = [
+    "-I./",
+    "-nostdlibinc",
+    "-fno-builtin",
+    "-fno-common",
+    "-DAPPLE=1",
+    "-DKERNEL=1",
+    "-D_KERNEL=1",
+    "-DKERNEL_PRIVATE=1",
+    "-DXNU_KERNEL_PRIVATE=1",
+    "-DMACH_KERNEL_PRIVATE=1",
+    "-DMACH_BSD=1",
+    "-DPRIVATE=1",
+    "-D__MACHO__=1",
+    "-fblocks",
+    "-DCONFIG_SCHED_TRADITIONAL=1",
+    "-DCONFIG_SCHED_MULTIQ=1",
+    "-DCONFIG_SCHED_CLUTCH=1",
+    "-DCONFIG_SCHED_TIMESHARE_CORE=1",
+    "-DCC_INTERNAL_SDK=1",
+]
+
+X86_64_FLAGS = [
+    "-target", "x86_64-apple-darwin",
+    "-Dx86_64",
+    "-DX86_64",
+    "-D__X86_64__",
+    "-DLP64",
+    "-DPAGE_SIZE_FIXED",
+    "-mkernel",
+    "-msoft-float",
+]
+
+filegroup(
+    name = "osfmk_headers",
+    srcs = glob(["**/*.h"]),
+    visibility = ["//visibility:public"],
+)
+
+genassym(
+    name = "assym_s",
+    src = "i386/genassym.c",
+    out = "assym.s",
+    copts = COMMON_KERNEL_FLAGS + X86_64_FLAGS,
+    hdrs = ["//:all_headers", "//:config_header_files"],
+    includes = [
+        "osfmk",
+        "bsd",
+        "osfmk/libsa",
+        "osfmk/kern",
+        "osfmk/mach",
+        "osfmk/i386",
+        "osfmk/x86_64",
+        "libkern",
+        "EXTERNAL_HEADERS",
+        "pexpert",
+        "iokit",
+    ],
+    deps = ["//:common_headers"],
+)
+
+genrule(
+    name = "debug_sandbox",
+    srcs = ["//:all_headers"],
+    outs = ["sandbox_listing.txt"],
+    cmd = "find . -maxdepth 5 > $@",
+)
+
+genrule(
+    name = "start_S",
+    srcs = ["x86_64/start.s"],
+    outs = ["x86_64/start.S"],
+    cmd = "cp $< $@",
+)
+
+cc_library(
+    name = "osfmk_start",
+    srcs = [
+        "x86_64/start.S",
+    ],
+    hdrs = [":assym_s"],
+    copts = COMMON_KERNEL_FLAGS + X86_64_FLAGS + ["-DASSEMBLER"],
+    includes = ["."],
+    deps = ["//:common_headers", ":osfmk_start_c"],
+    linkstatic = True,
+)
+
+cc_library(
+    name = "osfmk_start_c",
+    srcs = [
+        "x86_64/boot_pt.c",
+        "i386/gdt.c",
+        "i386/i386_init.c",
+        "i386/mp.c",
+        "//:libkern/stack_protector.c",
+    ],
+    copts = COMMON_KERNEL_FLAGS + X86_64_FLAGS,
+    includes = ["."],
+    deps = ["//:common_headers"],
+    linkstatic = True,
+)
