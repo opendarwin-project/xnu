@@ -70,7 +70,10 @@ typedef struct _quad_ {
 
 typedef char *          caddr_t;        /* address of a (signed) char */
 
+#ifndef _DADDR_T
+#define _DADDR_T
 typedef unsigned int    daddr_t;        /* an unsigned 32 */
+#endif
 #if 0 /* off_t should be 64-bit ! */
 typedef unsigned int    off_t;          /* another unsigned 32 */
 #endif

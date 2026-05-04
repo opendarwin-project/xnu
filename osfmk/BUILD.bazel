@@ -31,6 +31,7 @@ COMMON_KERNEL_FLAGS = [
     "-DCONFIG_TASK_MAX=1024",
     "-DKPERF=1",
     "-DCONFIG_SLEEP=1",
+    "-DCONFIG_DTRACE=1",
     "-DHIBERNATION=1",
     "-DCC_INTERNAL_SDK=1",
 ]
@@ -129,6 +130,29 @@ cc_library(
 )
 
 cc_library(
+    name = "osfmk_test_task",
+    srcs = [
+        "kern/affinity.c",
+        "kern/ast.c",
+        "kern/backtrace.c",
+        "kern/btlog.c",
+        "kern/build_config.c",
+        "kern/compact_id.c",
+        "kern/counter_common.c",
+        "kern/host.c",
+        "kern/host_notify.c",
+    ],
+    copts = COMMON_KERNEL_FLAGS + X86_64_FLAGS + BOOT_INCLUDE_FLAGS,
+    deps = [
+        "//:common_headers",
+        "//:config_headers",
+        ":host_notify_reply_mig",
+        ":mach_test_upcall_mig",
+    ],
+    linkstatic = True,
+)
+
+cc_library(
     name = "osfmk_start_c",
     srcs = [
         "console/serial_console.c",
@@ -141,7 +165,9 @@ cc_library(
         "i386/cpu.c",
         "i386/cpu_threads.c",
         "i386/cpuid.c",
+        "i386/fp_simd.s",
         "i386/fpu.c",
+        "i386/locks_i386.c",
         "x86_64/boot_pt.c",
         "i386/gdt.c",
         "i386/i386_init.c",
@@ -162,20 +188,28 @@ cc_library(
         "i386/rtclock.c",
         "i386/tsc.c",
         "i386/ucode.c",
+        "kern/bsd_kern.c",
         "kern/clock.c",
         "kern/debug.c",
+        "kern/kern_cdata.c",
+        "kern/kern_stackshot.c",
         "kern/locks.c",
         "kern/machine.c",
         "kern/processor.c",
         "kern/printf.c",
         "kern/sched_prim.c",
         "kern/startup.c",
+        "kern/task.c",
         "kern/thread.c",
         "kern/timer_call.c",
+        "kern/zalloc.c",
+        "kdp/kdp_core.c",
         "prng/prng_random.c",
+        "x86_64/copyio.c",
         "x86_64/loose_ends.c",
         "x86_64/pmap.c",
         "//:libkern/stack_protector.c",
+        "//:libkern/gen/OSAtomicOperations.c",
     ],
     textual_hdrs = [
         "console/iso_font.c",
@@ -407,47 +441,242 @@ mig_library(
     visibility = ["//visibility:public"],
 )
 
+mig_library(
+    name = "exc_mig",
+    src = "mach/exc.defs",
+    deps = [":common_mig_defs"],
+    cpp_flags = ["-D__MACH30__"] + COMMON_KERNEL_FLAGS + X86_64_FLAGS,
+    mig_flags = ["-kernel", "-mach_msg2", "-novouchers"],
+    server_c = "mach/exc_server.c",
+    server_h = "mach/exc_server.h",
+    user_c = "mach/exc_user.c",
+    user_h = "mach/exc.h",
+    copts = COMMON_KERNEL_FLAGS + X86_64_FLAGS,
+    visibility = ["//visibility:public"],
+)
+
+mig_library(
+    name = "mach_eventlink_mig",
+    src = "mach/mach_eventlink.defs",
+    deps = [":common_mig_defs"],
+    cpp_flags = ["-D__MACH30__"] + COMMON_KERNEL_FLAGS + X86_64_FLAGS,
+    mig_flags = ["-kernel", "-mach_msg2", "-novouchers"],
+    server_c = "mach/mach_eventlink_server.c",
+    server_h = "mach/mach_eventlink_server.h",
+    user_c = "mach/mach_eventlink_user.c",
+    user_h = "mach/mach_eventlink.h",
+    copts = COMMON_KERNEL_FLAGS + X86_64_FLAGS,
+    visibility = ["//visibility:public"],
+)
+
+mig_library(
+    name = "ktrace_background_mig",
+    src = "mach/ktrace_background.defs",
+    deps = [":common_mig_defs"],
+    cpp_flags = ["-D__MACH30__"] + COMMON_KERNEL_FLAGS + X86_64_FLAGS,
+    mig_flags = ["-kernel", "-mach_msg2", "-novouchers"],
+    server_c = "mach/ktrace_background_server.c",
+    server_h = "mach/ktrace_background_server.h",
+    user_c = "mach/ktrace_background_user.c",
+    user_h = "mach/ktrace_background.h",
+    copts = COMMON_KERNEL_FLAGS + X86_64_FLAGS,
+    visibility = ["//visibility:public"],
+)
+
+mig_library(
+    name = "mach_exc_mig",
+    src = "mach/mach_exc.defs",
+    deps = [":common_mig_defs"],
+    cpp_flags = ["-D__MACH30__"] + COMMON_KERNEL_FLAGS + X86_64_FLAGS,
+    mig_flags = ["-kernel", "-mach_msg2", "-novouchers"],
+    server_c = "mach/mach_exc_server.c",
+    server_h = "mach/mach_exc_server.h",
+    user_c = "mach/mach_exc_user.c",
+    user_h = "mach/mach_exc.h",
+    copts = COMMON_KERNEL_FLAGS + X86_64_FLAGS,
+    visibility = ["//visibility:public"],
+)
+
+mig_library(
+    name = "mach_notify_mig",
+    src = "mach/mach_notify.defs",
+    deps = [":common_mig_defs"],
+    cpp_flags = ["-D__MACH30__"] + COMMON_KERNEL_FLAGS + X86_64_FLAGS,
+    mig_flags = ["-kernel", "-mach_msg2", "-novouchers"],
+    server_c = "mach/mach_notify_server.c",
+    server_h = "mach/mach_notify_server.h",
+    user_c = "mach/mach_notify_user.c",
+    user_h = "mach/mach_notify.h",
+    copts = COMMON_KERNEL_FLAGS + X86_64_FLAGS,
+    visibility = ["//visibility:public"],
+)
+
+mig_library(
+    name = "memory_entry_mig",
+    src = "mach/memory_entry.defs",
+    deps = [":common_mig_defs"],
+    cpp_flags = ["-D__MACH30__"] + COMMON_KERNEL_FLAGS + X86_64_FLAGS,
+    mig_flags = ["-kernel", "-mach_msg2", "-novouchers"],
+    server_c = "mach/memory_entry_server.c",
+    server_h = "mach/memory_entry_server.h",
+    user_c = "mach/memory_entry_user.c",
+    user_h = "mach/memory_entry.h",
+    copts = COMMON_KERNEL_FLAGS + X86_64_FLAGS,
+    visibility = ["//visibility:public"],
+)
+
+mig_library(
+    name = "restartable_mig",
+    src = "mach/restartable.defs",
+    deps = [":common_mig_defs"],
+    cpp_flags = ["-D__MACH30__"] + COMMON_KERNEL_FLAGS + X86_64_FLAGS,
+    mig_flags = ["-kernel", "-mach_msg2", "-novouchers"],
+    server_c = "mach/restartable_server.c",
+    server_h = "mach/restartable_server.h",
+    user_c = "mach/restartable_user.c",
+    user_h = "mach/restartable.h",
+    copts = COMMON_KERNEL_FLAGS + X86_64_FLAGS,
+    visibility = ["//visibility:public"],
+)
+
+mig_library(
+    name = "audit_triggers_mig",
+    src = "mach/audit_triggers.defs",
+    deps = [":common_mig_defs"],
+    cpp_flags = ["-D__MACH30__"] + COMMON_KERNEL_FLAGS + X86_64_FLAGS,
+    mig_flags = ["-kernel", "-mach_msg2", "-novouchers"],
+    server_c = "mach/audit_triggers_server.c",
+    server_h = "mach/audit_triggers_server.h",
+    user_c = "mach/audit_triggers_user.c",
+    user_h = "mach/audit_triggers.h",
+    copts = COMMON_KERNEL_FLAGS + X86_64_FLAGS,
+    visibility = ["//visibility:public"],
+)
+
+mig_library(
+    name = "task_access_mig",
+    src = "mach/task_access.defs",
+    deps = [":common_mig_defs"],
+    cpp_flags = ["-D__MACH30__"] + COMMON_KERNEL_FLAGS + X86_64_FLAGS,
+    mig_flags = ["-kernel", "-mach_msg2", "-novouchers"],
+    server_c = "mach/task_access_server.c",
+    server_h = "mach/task_access_server.h",
+    user_c = "mach/task_access_user.c",
+    user_h = "mach/task_access.h",
+    copts = COMMON_KERNEL_FLAGS + X86_64_FLAGS,
+    visibility = ["//visibility:public"],
+)
+
+mig_library(
+    name = "vm32_map_mig",
+    src = "mach/vm32_map.defs",
+    deps = [":common_mig_defs"],
+    cpp_flags = ["-D__MACH30__"] + COMMON_KERNEL_FLAGS + X86_64_FLAGS,
+    mig_flags = ["-kernel", "-mach_msg2", "-novouchers"],
+    server_c = "mach/vm32_map_server.c",
+    server_h = "mach/vm32_map_server.h",
+    user_c = "mach/vm32_map_user.c",
+    user_h = "mach/vm32_map.h",
+    copts = COMMON_KERNEL_FLAGS + X86_64_FLAGS,
+    visibility = ["//visibility:public"],
+)
+
+mig_library(
+    name = "mach_test_upcall_mig",
+    src = "mach/mach_test_upcall.defs",
+    deps = [":common_mig_defs"],
+    cpp_flags = ["-D__MACH30__"] + COMMON_KERNEL_FLAGS + X86_64_FLAGS,
+    mig_flags = ["-kernel", "-mach_msg2", "-novouchers"],
+    server_c = "mach/mach_test_upcall_server.c",
+    server_h = "mach/mach_test_upcall_server.h",
+    user_c = "mach/mach_test_upcall_user.c",
+    user_h = "mach/mach_test_upcall.h",
+    copts = COMMON_KERNEL_FLAGS + X86_64_FLAGS,
+    visibility = ["//visibility:public"],
+)
+
+mig_library(
+    name = "vfs_nspace_mig",
+    src = "mach/vfs_nspace.defs",
+    deps = [":common_mig_defs"],
+    cpp_flags = ["-D__MACH30__"] + COMMON_KERNEL_FLAGS + X86_64_FLAGS,
+    mig_flags = ["-kernel", "-mach_msg2", "-novouchers"],
+    server_c = "mach/vfs_nspace_server.c",
+    server_h = "mach/vfs_nspace_server.h",
+    user_c = "mach/vfs_nspace_user.c",
+    user_h = "mach/vfs_nspace.h",
+    copts = COMMON_KERNEL_FLAGS + X86_64_FLAGS,
+    visibility = ["//visibility:public"],
+)
+
+mig_library(
+    name = "host_notify_reply_mig",
+    src = "mach/host_notify_reply.defs",
+    deps = [":common_mig_defs"],
+    cpp_flags = ["-D__MACH30__"] + COMMON_KERNEL_FLAGS + X86_64_FLAGS,
+    mig_flags = ["-kernel", "-mach_msg2", "-novouchers"],
+    server_c = "mach/host_notify_reply_server.c",
+    server_h = "mach/host_notify_reply_server.h",
+    user_c = "mach/host_notify_reply_user.c",
+    user_h = "mach/host_notify_reply.h",
+    copts = COMMON_KERNEL_FLAGS + X86_64_FLAGS,
+    visibility = ["//visibility:public"],
+)
+
+mig_library(
+    name = "doubleagent_mig",
+    src = "mach/doubleagent_mig.defs",
+    deps = [":common_mig_defs"],
+    cpp_flags = ["-D__MACH30__"] + COMMON_KERNEL_FLAGS + X86_64_FLAGS,
+    mig_flags = ["-kernel", "-mach_msg2", "-novouchers"],
+    server_c = "mach/doubleagent_mig_server.c",
+    server_h = "mach/doubleagent_mig_server.h",
+    user_c = "mach/doubleagent_mig_user.c",
+    user_h = "mach/doubleagent_mig.h",
+    copts = COMMON_KERNEL_FLAGS + X86_64_FLAGS,
+    visibility = ["//visibility:public"],
+)
+
+ALL_MIG_GENS = [
+    ":clock_mig_gen",
+    ":clock_priv_mig_gen",
+    ":clock_reply_mig_gen",
+    ":host_priv_mig_gen",
+    ":host_security_mig_gen",
+    ":mach_host_mig_gen",
+    ":mach_port_mig_gen",
+    ":mach_vm_mig_gen",
+    ":mach_voucher_mig_gen",
+    ":processor_mig_gen",
+    ":processor_set_mig_gen",
+    ":resource_notify_mig_gen",
+    ":task_mig_gen",
+    ":thread_act_mig_gen",
+    ":vm_map_mig_gen",
+    ":exc_mig_gen",
+    ":mach_eventlink_mig_gen",
+    ":ktrace_background_mig_gen",
+    ":mach_exc_mig_gen",
+    ":mach_notify_mig_gen",
+    ":memory_entry_mig_gen",
+    ":restartable_mig_gen",
+    ":audit_triggers_mig_gen",
+    ":task_access_mig_gen",
+    ":vm32_map_mig_gen",
+    ":mach_test_upcall_mig_gen",
+    ":vfs_nspace_mig_gen",
+    ":doubleagent_mig_gen",
+]
+
 filegroup(
     name = "clock_headers_files",
-    srcs = [
-        ":clock_mig_gen",
-        ":clock_priv_mig_gen",
-        ":clock_reply_mig_gen",
-        ":host_priv_mig_gen",
-        ":host_security_mig_gen",
-        ":mach_host_mig_gen",
-        ":mach_port_mig_gen",
-        ":mach_vm_mig_gen",
-        ":mach_voucher_mig_gen",
-        ":processor_mig_gen",
-        ":processor_set_mig_gen",
-        ":resource_notify_mig_gen",
-        ":task_mig_gen",
-        ":thread_act_mig_gen",
-        ":vm_map_mig_gen",
-    ],
+    srcs = ALL_MIG_GENS,
     output_group = "hdrs",
 )
 
 cc_library(
     name = "clock_headers",
-    hdrs = [
-        ":clock_mig_gen",
-        ":clock_priv_mig_gen",
-        ":clock_reply_mig_gen",
-        ":host_priv_mig_gen",
-        ":host_security_mig_gen",
-        ":mach_host_mig_gen",
-        ":mach_port_mig_gen",
-        ":mach_vm_mig_gen",
-        ":mach_voucher_mig_gen",
-        ":processor_mig_gen",
-        ":processor_set_mig_gen",
-        ":resource_notify_mig_gen",
-        ":task_mig_gen",
-        ":thread_act_mig_gen",
-        ":vm_map_mig_gen",
-    ],
+    hdrs = ALL_MIG_GENS,
     includes = ["."],
     visibility = ["//visibility:public"],
 )

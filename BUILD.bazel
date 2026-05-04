@@ -5,6 +5,7 @@ package(default_visibility = ["//visibility:public"])
 
 exports_files([
     "libkern/stack_protector.c",
+    "libkern/gen/OSAtomicOperations.c",
     "early_crc32_support.c",
     "iokit/Kernel/IOHibernateRestoreKernel.c",
     "early_string_support.c",
@@ -383,8 +384,11 @@ cc_library(
         "libkern/os/log.c",
         "bsd/kern/subr_log.c",
     ],
-    copts = COMMON_KERNEL_FLAGS + X86_64_FLAGS,
-    deps = [":pexpert_headers"],
+    copts = COMMON_KERNEL_FLAGS + X86_64_FLAGS + [
+        "-DBSD_KERNEL_PRIVATE=1",
+        "-DCONFIG_MSG_BSIZE=131072",
+    ],
+    deps = [":common_headers"],
     linkstatic = True,
 )
 

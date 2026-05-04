@@ -199,7 +199,9 @@ int     _consume_printf_args(int, ...);
 uint32_t        crc32(uint32_t crc, const void *bufp, size_t len);
 
 int     copystr(const void *kfaddr, void *kdaddr, size_t len, size_t *done);
+#ifndef MACH_KERNEL_PRIVATE
 int     copyinstr(const user_addr_t uaddr, void *kaddr, size_t len, size_t *done) OS_WARN_RESULT;
+#endif
 int     copyoutstr(const void *kaddr, user_addr_t udaddr, size_t len, size_t *done);
 #if XNU_KERNEL_PRIVATE
 int     copyin_atomic32(const user_addr_t user_addr, uint32_t *u32);

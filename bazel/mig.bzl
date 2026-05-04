@@ -126,7 +126,20 @@ mig_library_rule = rule(
     },
 )
 
-def mig_library(name, src, deps = [], cpp_flags = ["-D__MACH30__"], mig_flags = [], include_dirs = [], visibility = None, copts = [], cc_deps = ["//:common_headers"], user_c = None, server_c = None, user_h = None, server_h = None):
+def mig_library(name, src, deps = [], cpp_flags = ["-D__MACH30__"], mig_flags = [], include_dirs = [], visibility = None, copts = [], cc_deps = ["//:common_headers"], user_c = None, server_c = None, user_h = None, server_h = None, compile_sides = []):
+    """Generate MIG output and a headers-only cc_library wrapper.
+
+    Generates user_c, server_c, user_h, server_h via migcom (whichever
+    are non-empty). The resulting cc_library named `name` contains ONLY
+    the generated headers - it does not compile any .c file. This matches
+    the kernel build pattern where conf/files explicitly lists the specific
+    generated .c file(s) the kernel actually uses (server.c for KernelServer
+    subsystems, user.c for outgoing-from-kernel stubs).
+
+    If `compile_sides` is non-empty, an additional cc_library named
+    `name + "_compiled"` is produced that compiles the requested side(s).
+    Valid values: "user", "server".
+    """
     # Default outputs if none specified
     if user_c == None and server_c == None and user_h == None and server_h == None:
         base_name = src.split("/")[-1]
@@ -150,11 +163,26 @@ def mig_library(name, src, deps = [], cpp_flags = ["-D__MACH30__"], mig_flags = 
         server_h = server_h,
     )
 
+    # Headers-only cc_library: re-exports the generated .h files as a
+    # CcInfo header dependency. The _gen rule already returns CcInfo
+    # for the generated headers, so we just alias it.
     cc_library(
         name = name,
-        srcs = [name + "_gen"],
-        hdrs = [name + "_gen"],
-        copts = copts,
-        deps = cc_deps,
+        deps = [name + "_gen"] + cc_deps,
         visibility = visibility,
     )
+
+    if compile_sides:
+        compiled_srcs = []
+        if "user" in compile_sides and user_c:
+            compiled_srcs.append(user_c)
+        if "server" in compile_sides and server_c:
+            compiled_srcs.append(server_c)
+        cc_library(
+            name = name + "_compiled",
+            srcs = compiled_srcs,
+            copts = copts,
+            deps = [name] + cc_deps,
+            visibility = visibility,
+            linkstatic = True,
+        )

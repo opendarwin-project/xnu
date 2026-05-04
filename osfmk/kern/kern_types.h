@@ -217,7 +217,10 @@ typedef int wait_timeout_urgency_t;
 #ifdef  MACH_KERNEL_PRIVATE
 
 #include <kern/misc_protos.h>
+#ifndef _CLOCK_T
+#define _CLOCK_T
 typedef  struct clock                   *clock_t;
+#endif
 
 typedef struct mig_object               *mig_object_t;
 #define MIG_OBJECT_NULL                 ((mig_object_t) 0)

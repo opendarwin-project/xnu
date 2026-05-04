@@ -35,6 +35,7 @@
 #include <kern/ipc_kobject.h>
 #include <kern/host_notify.h>
 
+#include <kern/ipc_mig.h>
 #include <kern/queue.h>
 
 #include "mach/host_notify_reply.h"

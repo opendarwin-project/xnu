@@ -101,7 +101,10 @@ typedef quad_t *                qaddr_t;
 
 #include <sys/_types/_caddr_t.h>        /* core address */
 
+#ifndef _DADDR_T
+#define _DADDR_T
 typedef int32_t                 daddr_t;        /* disk address */
+#endif
 
 #include <sys/_types/_dev_t.h>                  /* device number */
 

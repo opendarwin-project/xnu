@@ -56,14 +56,18 @@
 #endif  /* MAX */
 
 /* Set a bit in a bit array */
+#ifndef setbit
 extern void setbit(
 	int             which,
 	int             *bitmap);
+#endif
 
 /* Clear a bit in a bit array */
+#ifndef clrbit
 extern void clrbit(
 	int             which,
 	int             *bitmap);
+#endif
 
 /* Find the first set bit in a bit array */
 extern int ffsbit(

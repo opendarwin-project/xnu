@@ -1006,7 +1006,9 @@ struct uthread *current_uthread(void) __pure2;
 
 extern void proc_set_task(proc_t, task_t);
 extern task_t proc_get_task_raw(proc_t proc);
+#ifndef _KERN_TASK_H_
 extern proc_t task_get_proc_raw(task_t task);
+#endif
 extern void proc_ref_hold_proc_task_struct(proc_t proc);
 extern void proc_release_proc_task_struct(proc_t proc);
 extern void task_ref_hold_proc_task_struct(task_t task);
@@ -1125,7 +1127,9 @@ uid_t dtrace_proc_selfruid(void);
 
 os_refgrp_decl_extern(p_refgrp);
 KALLOC_TYPE_DECLARE(proc_stats_zone);
+#ifndef _KERN_TASK_H_
 ZONE_DECLARE_ID(ZONE_ID_PROC_TASK, struct proc);
+#endif
 extern zone_t proc_task_zone;
 
 #if CONFIG_PROC_RESOURCE_LIMITS
