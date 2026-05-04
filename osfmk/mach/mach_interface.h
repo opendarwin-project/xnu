@@ -29,16 +29,13 @@
 #ifndef _MACH_INTERFACE_H_
 #define _MACH_INTERFACE_H_
 
+#include <mach/mig.h>
 #include <mach/clock.h>
 #include <mach/clock_priv.h>
-#include <mach/clock_reply_server.h>
-#include <mach/exc_server.h>
 #include <mach/host_priv.h>
 #include <mach/host_security.h>
-#include <mach/mach_exc_server.h>
 #include <mach/mach_host.h>
 #include <mach/mach_port.h>
-#include <mach/notify_server.h>
 #include <mach/processor.h>
 #include <mach/processor_set.h>
 #include <mach/semaphore.h>

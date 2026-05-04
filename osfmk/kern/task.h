@@ -94,6 +94,7 @@
 #include <kern/kern_types.h>
 #include <kern/task_ref.h>
 #include <mach/mach_types.h>
+#include <mach/task_info.h>
 #include <sys/cdefs.h>
 
 #ifdef XNU_KERNEL_PRIVATE

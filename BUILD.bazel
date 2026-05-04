@@ -35,6 +35,12 @@ dummy_header(name = "kcov_data_h", out = "build_config/san/kcov_data.h")
 dummy_header(name = "kasan_h", out = "build_config/san/kasan.h")
 
 filegroup(
+    name = "external_headers_filegroup",
+    srcs = glob(["EXTERNAL_HEADERS/**/*.h"]),
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
     name = "config_header_files",
     srcs = [o for n, o, d in DUMMY_HEADERS] + [
         "build_config/pthread.h",
@@ -101,6 +107,14 @@ filegroup(
 )
 
 cc_library(
+    name = "san_memintrinsics",
+    hdrs = ["san/memory/memintrinsics.h"],
+    include_prefix = "san",
+    strip_include_prefix = "san/memory",
+    visibility = ["//visibility:public"],
+)
+
+cc_library(
     name = "common_headers",
     hdrs = [":all_headers"],
     includes = [
@@ -113,6 +127,7 @@ cc_library(
         "osfmk/mach",
         "bsd",
         "osfmk/libsa",
+        "san/memory",
         "iokit",
         "pexpert",
         "osfmk/i386",
@@ -121,7 +136,7 @@ cc_library(
         "libkern/libkern/i386",
     ],
     copts = COMMON_KERNEL_FLAGS + X86_64_FLAGS,
-    deps = [":config_headers"],
+    deps = [":config_headers", ":san_memintrinsics", "//osfmk:clock_headers"],
 )
 
 KERNEL_LINK_FLAGS = [
@@ -177,6 +192,8 @@ cc_library(
         "-DAPPLE=1",
         "-DKERNEL=1",
         "-D_KERNEL=1",
+        "-DPRIVATE=1",
+        "-DKERNEL_PRIVATE=1",
         "-DIOKIT_KERNEL_PRIVATE=1",
         "-D__MACHO__=1",
         "-fblocks",

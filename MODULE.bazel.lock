@@ -194,6 +194,26 @@
   },
   "selectedYankedVersions": {},
   "moduleExtensions": {
+    "//bazel:repositories.bzl%bootstrap_cmds_extension": {
+      "general": {
+        "bzlTransitiveDigest": "+gqT/pj/h96bl9C2pcn7v8Og1VMNAmBbcz5mVrK/RI0=",
+        "usagesDigest": "LdTRc64vVejfF98xpN9+97DesTYpbj+QSppHECGwciE=",
+        "recordedInputs": [
+          "REPO_MAPPING:,bazel_tools bazel_tools"
+        ],
+        "generatedRepoSpecs": {
+          "com_apple_oss_bootstrap_cmds": {
+            "repoRuleId": "@@bazel_tools//tools/build_defs/repo:http.bzl%http_archive",
+            "attributes": {
+              "url": "https://github.com/apple-oss-distributions/bootstrap_cmds/archive/refs/tags/bootstrap_cmds-138.tar.gz",
+              "strip_prefix": "bootstrap_cmds-bootstrap_cmds-138",
+              "build_file": "@@//bazel:bootstrap_cmds.BUILD",
+              "sha256": "7f86f67c13be04504679170e923c6079e706d57b295f10db752f2f8245f7df8c"
+            }
+          }
+        }
+      }
+    },
     "@@rules_kotlin+//src/main/starlark/core/repositories:bzlmod_setup.bzl%rules_kotlin_extensions": {
       "general": {
         "bzlTransitiveDigest": "Ga4z8lQy1YQ5rAMy+dOl0dqcCEBnYNCXku8x3YQmDZI=",

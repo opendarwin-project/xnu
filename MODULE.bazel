@@ -7,3 +7,7 @@ bazel_dep(name = "rules_cc", version = "0.2.18")
 bazel_dep(name = "platforms", version = "1.1.0")
 
 register_toolchains("//bazel:xnu_toolchain")
+
+bootstrap_cmds = use_extension("//bazel:repositories.bzl", "bootstrap_cmds_extension")
+use_repo(bootstrap_cmds, "com_apple_oss_bootstrap_cmds")
+

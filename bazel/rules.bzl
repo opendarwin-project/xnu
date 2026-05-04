@@ -2,6 +2,7 @@ def genassym(name, src, out, copts = [], includes = [], hdrs = [], deps = []):
     inc_args = ["-I" + i for i in includes]
     # Add root and build roots for generated headers
     inc_args += ["-I.", "-I$(GENDIR)", "-I$(BINDIR)"]
+    inc_args += ["-I$(GENDIR)/build_config", "-I$(BINDIR)/build_config"]
 
     # We use a genrule to run the python script with clang
     native.genrule(

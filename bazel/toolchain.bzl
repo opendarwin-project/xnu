@@ -24,7 +24,7 @@ def _impl(ctx):
         ),
         tool_path(
             name = "cpp",
-            path = "/bin/false",
+            path = "/usr/bin/clang",
         ),
         tool_path(
             name = "gcov",

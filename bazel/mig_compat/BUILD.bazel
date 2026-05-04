@@ -1,0 +1,8 @@
+exports_files([
+    "compat.h",
+    "mach/boolean.h",
+    "mach/message.h",
+    "mach/kern_return.h",
+    "mach/std_types.h",
+    "mach/ndr.h",
+])
