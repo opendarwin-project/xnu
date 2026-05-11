@@ -85,6 +85,8 @@
 #include <kern/assert.h>
 #include <kern/backtrace.h>
 #include <kern/host.h>
+#include <kern/ipc_host.h>
+#include <kern/ledger.h>
 #include <kern/macro_help.h>
 #include <kern/sched.h>
 #include <kern/locks.h>

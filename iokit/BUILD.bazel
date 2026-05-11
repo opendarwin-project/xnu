@@ -1,0 +1,65 @@
+load("@rules_cc//cc:defs.bzl", "cc_library")
+load("//bazel:kernel_config.bzl", "COMMON_KERNEL_FLAGS", "X86_64_FLAGS")
+
+package(default_visibility = ["//visibility:public"])
+
+filegroup(
+    name = "iokit_headers",
+    srcs = glob(["**/*.h"]) + ["DriverKit/OSObject.h"],
+)
+
+genrule(
+    name = "osobject_iig",
+    srcs = ["DriverKit/OSObject.iig"],
+    outs = ["DriverKit/OSObject.h", "DriverKit/OSObject.iig.cpp"],
+    tools = ["//tools/iig:iig"],
+    cmd = "$(location //tools/iig:iig) -o $(location DriverKit/OSObject.h) -impl $(location DriverKit/OSObject.iig.cpp) $(location DriverKit/OSObject.iig)",
+)
+
+cc_library(
+    name = "iokit_hibernate",
+    srcs = ["Kernel/IOHibernateRestoreKernel.c"],
+    copts = [
+        "-nostdlibinc",
+        "-fno-builtin",
+        "-fno-common",
+        "-DAPPLE=1",
+        "-DKERNEL=1",
+        "-D_KERNEL=1",
+        "-DPRIVATE=1",
+        "-DKERNEL_PRIVATE=1",
+        "-DIOKIT_KERNEL_PRIVATE=1",
+        "-D__MACHO__=1",
+        "-fblocks",
+        "-DCONFIG_SCHED_TRADITIONAL=1",
+        "-DCONFIG_SCHED_MULTIQ=1",
+        "-DCONFIG_SCHED_CLUTCH=1",
+        "-DCONFIG_SCHED_TIMESHARE_CORE=1",
+        "-DCC_INTERNAL_SDK=1",
+    ] + X86_64_FLAGS,
+    deps = ["//:common_headers"],
+    linkstatic = True,
+)
+
+cc_library(
+    name = "iokit_startup",
+    srcs = [
+        "Kernel/IOStartIOKit.cpp",
+        "Kernel/IOPlatformExpert.cpp",
+    ],
+    copts = COMMON_KERNEL_FLAGS + X86_64_FLAGS + [
+        "-DIOKIT_KERNEL_PRIVATE=1",
+    ],
+    deps = ["//:common_headers"],
+    linkstatic = True,
+)
+
+cc_library(
+    name = "iokit_support",
+    srcs = ["Kernel/IOStringFuncs.c"],
+    copts = COMMON_KERNEL_FLAGS + X86_64_FLAGS + [
+        "-DIOKIT_KERNEL_PRIVATE=1",
+    ],
+    deps = ["//:common_headers"],
+    linkstatic = True,
+)

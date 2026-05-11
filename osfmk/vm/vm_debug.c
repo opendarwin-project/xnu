@@ -73,7 +73,7 @@
 #ifdef VM32_SUPPORT
 
 #include <mach/vm32_map_server.h>
-#include <mach/vm_map.h>
+#include <mach/vm_map_server.h>
 #include <vm/vm_map_xnu.h>
 #include <vm/vm_lock_perf.h>
 

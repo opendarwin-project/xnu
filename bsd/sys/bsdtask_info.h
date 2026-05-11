@@ -102,13 +102,14 @@ struct proc_regioninfo_internal {
 #define PROC_REGION_SUBMAP      1
 #define PROC_REGION_SHARED      2
 
-extern uint32_t vnode_vid(void *vp);
+struct vnode;
+extern uint32_t vnode_vid(struct vnode *vp);
 
 #if CONFIG_IOSCHED
 extern struct vnode *vnode_mountdevvp(struct vnode *);
 #endif
 
-extern boolean_t vnode_isonexternalstorage(void *vp);
+extern boolean_t vnode_isonexternalstorage(struct vnode *vp);
 
 #endif /* MACH_KERNEL_PRIVATE */
 

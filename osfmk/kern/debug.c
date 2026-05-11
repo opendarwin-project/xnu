@@ -1865,7 +1865,7 @@ handle_debugger_trap(unsigned int exception, unsigned int code, unsigned int sub
 
 __attribute__((noinline, not_tail_called))
 void
-log(__unused int level, char *fmt, ...)
+log(__unused int level, const char *fmt, ...)
 {
 	void *caller = __builtin_return_address(0);
 	va_list listp;

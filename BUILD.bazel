@@ -1,16 +1,8 @@
 load("@rules_cc//cc:defs.bzl", "cc_library", "cc_binary")
 load("//bazel:rules.bzl", "dummy_header")
+load("//bazel:kernel_config.bzl", "COMMON_KERNEL_FLAGS", "X86_64_FLAGS")
 
 package(default_visibility = ["//visibility:public"])
-
-exports_files([
-    "libkern/stack_protector.c",
-    "libkern/gen/OSAtomicOperations.c",
-    "early_crc32_support.c",
-    "iokit/Kernel/IOHibernateRestoreKernel.c",
-    "early_string_support.c",
-    "early_vm_support.c",
-])
 
 # Dummy headers for config options
 DUMMY_HEADERS = [
@@ -19,8 +11,6 @@ DUMMY_HEADERS = [
     ("mach_assert", "build_config/mach_assert.h", "MACH_ASSERT"),
     ("zleaks", "build_config/zleaks.h", "ZLEAKS"),
     ("config_serial_kdp", "build_config/config_serial_kdp.h", "CONFIG_SERIAL_KDP"),
-    ("importance_inheritance", "build_config/importance_inheritance.h", "IMPORTANCE_INHERITANCE"),
-    ("importance_debug", "build_config/importance_debug.h", "IMPORTANCE_DEBUG"),
     ("config_dtrace", "build_config/config_dtrace.h", "CONFIG_DTRACE"),
     ("no_kextd", "build_config/no_kextd.h", "NO_KEXTD"),
     ("config_quiesce_counter", "build_config/config_quiesce_counter.h", "CONFIG_QUIESCE_COUNTER"),
@@ -141,77 +131,15 @@ platform(
     ],
 )
 
-COMMON_KERNEL_FLAGS = [
-    "-I.",
-    "-nostdlibinc",
-    "-fno-builtin",
-    "-fno-common",
-    "-DAPPLE=1",
-    "-DKERNEL=1",
-    "-D_KERNEL=1",
-    "-DKERNEL_PRIVATE=1",
-    "-DXNU_KERNEL_PRIVATE=1",
-    "-DMACH_KERNEL_PRIVATE=1",
-    "-DMACH_BSD=1",
-    "-DMACH_KDP=1",
-    "-DPRIVATE=1",
-    "-DXNU_TARGET_OS_OSX=1",
-    "-D__MACHO__=1",
-    "-fblocks",
-    "-DCONFIG_SCHED_TRADITIONAL=1",
-    "-DCONFIG_SCHED_MULTIQ=1",
-    "-DCONFIG_SCHED_CLUTCH=1",
-    "-DCONFIG_SCHED_TIMESHARE_CORE=1",
-    "-DCONFIG_THREAD_MAX=2560",
-    "-DCONFIG_TASK_MAX=1024",
-    "-DKPERF=1",
-    "-DCC_INTERNAL_SDK=1",
-]
-
-X86_64_FLAGS = [
-    "-target", "x86_64-apple-darwin",
-    "-Dx86_64",
-    "-DX86_64",
-    "-D__X86_64__",
-    "-DLP64",
-    "-DPAGE_SIZE_FIXED",
-    "-DKERNEL_BASE_OFFSET=0x100000",
-    "-mkernel",
-    "-msoft-float",
-]
-
-cc_library(
-    name = "kernel_version_support",
-    srcs = [":kernel_version_c"],
-    hdrs = [":kernel_version_h"],
-    includes = ["build_config"],
-    copts = COMMON_KERNEL_FLAGS + X86_64_FLAGS,
-    deps = [":config_headers"],
-)
-
-PEXPERT_BOOT_FLAGS = COMMON_KERNEL_FLAGS + [
-    "-DPEXPERT_KERNEL_PRIVATE=1",
-]
-
-PEXPERT_BOOT_INCLUDE_FLAGS = [
-    "-Ibuild_config",
-    "-IEXTERNAL_HEADERS",
-    "-Ilibkern",
-    "-Ilibkern/libkern",
-    "-Iosfmk",
-    "-Iosfmk/kern",
-    "-Iosfmk/mach",
-    "-Iosfmk/i386",
-    "-Iosfmk/x86_64",
-    "-Ibsd",
-    "-Iiokit",
-    "-Ipexpert",
-]
-
 filegroup(
     name = "all_headers",
     srcs = [
         "//osfmk:osfmk_headers",
+        "//bsd:bsd_headers",
+        "//libkern:libkern_headers",
+        "//iokit:iokit_headers",
+        "//pexpert:pexpert_headers",
+        "//security:security_headers",
         ":config_header_files",
     ] + glob([
         "**/*.h",
@@ -283,6 +211,15 @@ cc_library(
     deps = [":config_headers", ":san_memintrinsics", ":san_kcov_headers", "//osfmk:system_mach_headers", "//osfmk:clock_headers"],
 )
 
+cc_library(
+    name = "kernel_version_support",
+    srcs = [":kernel_version_c"],
+    hdrs = [":kernel_version_h"],
+    includes = ["build_config"],
+    copts = COMMON_KERNEL_FLAGS + X86_64_FLAGS,
+    deps = [":config_headers"],
+)
+
 KERNEL_LINK_FLAGS = [
     "-target", "x86_64-apple-darwin",
     "-fuse-ld=lld",
@@ -325,159 +262,16 @@ KERNEL_LINK_FLAGS = [
     "-Wl,-add_split_seg_info",
 ]
 
-cc_library(
-    name = "iokit_hibernate",
-    srcs = ["iokit/Kernel/IOHibernateRestoreKernel.c"],
-    copts = [
-        "-target", "x86_64-apple-darwin",
-        "-nostdlibinc",
-        "-fno-builtin",
-        "-fno-common",
-        "-DAPPLE=1",
-        "-DKERNEL=1",
-        "-D_KERNEL=1",
-        "-DPRIVATE=1",
-        "-DKERNEL_PRIVATE=1",
-        "-DIOKIT_KERNEL_PRIVATE=1",
-        "-D__MACHO__=1",
-        "-fblocks",
-        "-DCONFIG_SCHED_TRADITIONAL=1",
-        "-DCONFIG_SCHED_MULTIQ=1",
-        "-DCONFIG_SCHED_CLUTCH=1",
-        "-DCONFIG_SCHED_TIMESHARE_CORE=1",
-        "-DCC_INTERNAL_SDK=1",
-        "-Dx86_64",
-        "-DX86_64",
-        "-D__X86_64__",
-        "-DLP64",
-        "-DPAGE_SIZE_FIXED",
-        "-mkernel",
-        "-msoft-float",
-    ],
-    deps = [":common_headers"],
-    linkstatic = True,
-)
-
-cc_library(
-    name = "kcformat_support",
-    srcs = [
-        "pexpert/gen/kcformat.c",
-    ],
-    copts = COMMON_KERNEL_FLAGS + X86_64_FLAGS,
-    deps = [":common_headers"],
-    linkstatic = True,
-)
-
-cc_library(
-    name = "kernel_mach_header_support",
-    srcs = [
-        "libkern/kernel_mach_header.c",
-    ],
-    copts = COMMON_KERNEL_FLAGS + X86_64_FLAGS,
-    deps = [":common_headers"],
-    linkstatic = True,
-)
-
-cc_library(
-    name = "os_log_support",
-    srcs = [
-        "libkern/os/log.c",
-        "bsd/kern/subr_log.c",
-    ],
-    copts = COMMON_KERNEL_FLAGS + X86_64_FLAGS + [
-        "-DBSD_KERNEL_PRIVATE=1",
-        "-DCONFIG_MSG_BSIZE=131072",
-    ],
-    deps = [":common_headers"],
-    linkstatic = True,
-)
-
-cc_library(
-    name = "early_log_support",
-    srcs = [
-        "early_log_support.c",
-    ],
-    copts = COMMON_KERNEL_FLAGS + X86_64_FLAGS,
-    deps = [":pexpert_headers"],
-    linkstatic = True,
-)
-
-cc_library(
-    name = "early_string_support",
-    srcs = [
-        "early_string_support.c",
-    ],
-    copts = COMMON_KERNEL_FLAGS + X86_64_FLAGS,
-    deps = [":pexpert_headers"],
-    linkstatic = True,
-)
-
-cc_library(
-    name = "early_vm_support",
-    srcs = [
-        "early_vm_support.c",
-    ],
-    copts = COMMON_KERNEL_FLAGS + X86_64_FLAGS,
-    deps = [":pexpert_headers"],
-    linkstatic = True,
-)
-
-cc_library(
-    name = "crc32_support",
-    srcs = [
-        "early_crc32_support.c",
-    ],
-    copts = COMMON_KERNEL_FLAGS + X86_64_FLAGS,
-    deps = [":pexpert_headers"],
-    linkstatic = True,
-)
-
-cc_library(
-    name = "pexpert_gen_support",
-    srcs = [
-        "pexpert/gen/bootargs.c",
-        "pexpert/gen/device_tree.c",
-        "pexpert/gen/pe_gen.c",
-        "pexpert/i386/pe_bootargs.c",
-        "pexpert/i386/pe_identify_machine.c",
-        "pexpert/i386/pe_serial.c",
-    ],
-    copts = PEXPERT_BOOT_FLAGS + X86_64_FLAGS + PEXPERT_BOOT_INCLUDE_FLAGS,
-    deps = [":common_headers"],
-    linkstatic = True,
-)
-
-cc_library(
-    name = "pexpert_init_support",
-    srcs = [
-        "pexpert/i386/pe_init.c",
-    ],
-    copts = PEXPERT_BOOT_FLAGS + X86_64_FLAGS + PEXPERT_BOOT_INCLUDE_FLAGS,
-    deps = [":common_headers"],
-    linkstatic = True,
-)
-
-cc_library(
-    name = "pexpert_kprintf_support",
-    srcs = [
-        "pexpert/i386/pe_kprintf.c",
-    ],
-    copts = PEXPERT_BOOT_FLAGS + X86_64_FLAGS + PEXPERT_BOOT_INCLUDE_FLAGS,
-    deps = [":common_headers"],
-    linkstatic = True,
-)
-
 cc_binary(
     name = "kernel",
     deps = [
         "//osfmk:osfmk_start",
-        ":kcformat_support",
-        ":early_log_support",
-        ":kernel_mach_header_support",
-        ":pexpert_gen_support",
-        ":pexpert_init_support",
-        ":pexpert_kprintf_support",
-        ":iokit_hibernate",
+        "//pexpert:kcformat_support",
+        "//pexpert:pexpert_gen_support",
+        "//pexpert:pexpert_init_support",
+        "//pexpert:pexpert_kprintf_support",
+        "//iokit:iokit_hibernate",
+        "//libkern:kernel_mach_header_support",
     ],
     linkopts = KERNEL_LINK_FLAGS,
 )

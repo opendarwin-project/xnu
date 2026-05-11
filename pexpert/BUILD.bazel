@@ -1,0 +1,67 @@
+load("@rules_cc//cc:defs.bzl", "cc_library")
+load("//bazel:kernel_config.bzl", "COMMON_KERNEL_FLAGS", "X86_64_FLAGS")
+
+package(default_visibility = ["//visibility:public"])
+
+filegroup(
+    name = "pexpert_headers",
+    srcs = glob(["**/*.h"]),
+)
+
+PEXPERT_FLAGS = COMMON_KERNEL_FLAGS + [
+    "-DPEXPERT_KERNEL_PRIVATE=1",
+]
+
+PEXPERT_INCLUDE_FLAGS = [
+    "-Ibuild_config",
+    "-IEXTERNAL_HEADERS",
+    "-Ilibkern",
+    "-Ilibkern/libkern",
+    "-Iosfmk",
+    "-Iosfmk/kern",
+    "-Iosfmk/mach",
+    "-Iosfmk/i386",
+    "-Iosfmk/x86_64",
+    "-Ibsd",
+    "-Iiokit",
+    "-Ipexpert",
+]
+
+cc_library(
+    name = "kcformat_support",
+    srcs = ["gen/kcformat.c"],
+    copts = COMMON_KERNEL_FLAGS + X86_64_FLAGS,
+    deps = ["//:common_headers"],
+    linkstatic = True,
+)
+
+cc_library(
+    name = "pexpert_gen_support",
+    srcs = [
+        "gen/bootargs.c",
+        "gen/device_tree.c",
+        "gen/pe_gen.c",
+        "i386/pe_bootargs.c",
+        "i386/pe_identify_machine.c",
+        "i386/pe_serial.c",
+    ],
+    copts = PEXPERT_FLAGS + X86_64_FLAGS + PEXPERT_INCLUDE_FLAGS,
+    deps = ["//:common_headers"],
+    linkstatic = True,
+)
+
+cc_library(
+    name = "pexpert_init_support",
+    srcs = ["i386/pe_init.c"],
+    copts = PEXPERT_FLAGS + X86_64_FLAGS + PEXPERT_INCLUDE_FLAGS,
+    deps = ["//:common_headers"],
+    linkstatic = True,
+)
+
+cc_library(
+    name = "pexpert_kprintf_support",
+    srcs = ["i386/pe_kprintf.c"],
+    copts = PEXPERT_FLAGS + X86_64_FLAGS + PEXPERT_INCLUDE_FLAGS,
+    deps = ["//:common_headers"],
+    linkstatic = True,
+)

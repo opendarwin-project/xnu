@@ -72,7 +72,7 @@
 #include <mach/memory_object.h>
 #include <mach/mach_host_server.h>
 #include <mach/upl.h>
-#include <mach/vm_map.h>
+#include <mach/vm_map_server.h>
 #include <mach/vm_param.h>
 #include <mach/vm_statistics.h>
 #include <mach/sdt.h>

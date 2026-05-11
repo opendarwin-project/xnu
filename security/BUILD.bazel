@@ -1,0 +1,22 @@
+load("@rules_cc//cc:defs.bzl", "cc_library")
+load("//bazel:kernel_config.bzl", "COMMON_KERNEL_FLAGS", "X86_64_FLAGS")
+
+package(default_visibility = ["//visibility:public"])
+
+filegroup(
+    name = "security_headers",
+    srcs = glob(["**/*.h"]),
+)
+
+SECURITY_COPTS = COMMON_KERNEL_FLAGS + X86_64_FLAGS + [
+    "-DBSD_KERNEL_PRIVATE=1",
+    "-DSECURITY_MAC_INTERNAL=1",
+]
+
+cc_library(
+    name = "security",
+    srcs = glob(["*.c"]),
+    copts = SECURITY_COPTS,
+    deps = ["//:common_headers"],
+    linkstatic = True,
+)

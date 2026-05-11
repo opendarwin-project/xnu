@@ -36,6 +36,7 @@
 #include <mach/host_special_ports.h>    /* RESOURCE_NOTIFY_PORT    */
 #include <kern/sched.h>
 #include <kern/task.h>
+#include <kern/ipc_tt.h>
 #include <mach/thread_policy.h>
 #include <sys/errno.h>
 #include <sys/resource.h>

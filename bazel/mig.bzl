@@ -17,8 +17,8 @@ def _mig_library_impl(ctx):
     if base_name.endswith(".defs"):
         base_name = base_name[:-5]
 
-    # Preprocessing step
-    preprocessed_defs = ctx.actions.declare_file(base_name + ".preprocessed.defs")
+    # Preprocessing step — use rule name to avoid conflicts when same .defs file is processed twice
+    preprocessed_defs = ctx.actions.declare_file(ctx.label.name + ".preprocessed.defs")
 
     # Outputs
     outputs = []

@@ -128,6 +128,7 @@
 #include <kern/kern_memorystatus_internal.h>
 #include <kern/ipc_kobject.h>   /* ipc_kobject_set_kobjidx() */
 #include <kern/ast.h>           /* proc_filedesc_ast */
+#include <kern/ipc_tt.h>
 #include <libkern/amfi/amfi.h>
 #include <mach-o/loader.h>
 #include <os/base.h>            /* OS_STRINGIFY */

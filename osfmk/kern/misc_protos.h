@@ -211,7 +211,7 @@ extern int snprintf(char *, size_t, const char *, ...) __printflike(3, 4);
 extern int scnprintf(char *, size_t, const char *, ...) __printflike(3, 4);
 extern const char *tsnprintf(char *, size_t, const char *, ...) __printflike(3, 4);
 
-extern void log(int level, char *fmt, ...) __printflike(2, 3);
+extern void log(int level, const char *fmt, ...) __printflike(2, 3);
 
 void
 _doprnt(

@@ -1,0 +1,106 @@
+load("@rules_cc//cc:defs.bzl", "cc_library")
+load("//bazel:kernel_config.bzl", "COMMON_KERNEL_FLAGS", "X86_64_FLAGS")
+
+package(default_visibility = ["//visibility:public"])
+
+exports_files(["kern/subr_log.c"])
+
+genrule(
+    name = "sysproto_h",
+    srcs = ["kern/syscalls.master"],
+    outs = ["sys/sysproto.h"],
+    cmd = """\
+        _PWD=$$PWD && \
+        cd $(@D) && \
+        sh $$_PWD/$(location kern/makesyscalls.sh) \
+           $$_PWD/$(location kern/syscalls.master) proto > /dev/null \
+    """,
+    tools = ["kern/makesyscalls.sh"],
+)
+
+genrule(
+    name = "syscall_h",
+    srcs = ["kern/syscalls.master"],
+    outs = ["sys/syscall.h"],
+    cmd = """\
+        _PWD=$$PWD && \
+        cd $(@D) && \
+        sh $$_PWD/$(location kern/makesyscalls.sh) \
+           $$_PWD/$(location kern/syscalls.master) header > /dev/null \
+    """,
+    tools = ["kern/makesyscalls.sh"],
+)
+
+genrule(
+    name = "sysent_c",
+    srcs = ["kern/syscalls.master"],
+    outs = ["kern/init_sysent.c"],
+    cmd = """\
+        _PWD=$$PWD && \
+        cd $(@D) && \
+        sh $$_PWD/$(location kern/makesyscalls.sh) \
+           $$_PWD/$(location kern/syscalls.master) table > /dev/null \
+    """,
+    tools = ["kern/makesyscalls.sh"],
+)
+
+genrule(
+    name = "syscalls_c",
+    srcs = ["kern/syscalls.master"],
+    outs = ["kern/syscalls.c"],
+    cmd = """\
+        _PWD=$$PWD && \
+        cd $(@D) && \
+        sh $$_PWD/$(location kern/makesyscalls.sh) \
+           $$_PWD/$(location kern/syscalls.master) names > /dev/null \
+    """,
+    tools = ["kern/makesyscalls.sh"],
+)
+
+filegroup(
+    name = "bsd_headers",
+    srcs = glob(["**/*.h"]) + [":sysproto_h", ":syscall_h"],
+)
+
+cc_library(
+    name = "bsd_subr_log",
+    srcs = ["kern/subr_log.c"],
+    copts = COMMON_KERNEL_FLAGS + X86_64_FLAGS + [
+        "-DBSD_KERNEL_PRIVATE=1",
+    ],
+    deps = ["//:common_headers"],
+    linkstatic = True,
+)
+
+cc_library(
+    name = "bsd_libkern",
+    srcs = [
+        "libkern/bcd.c",
+        "libkern/crc32.c",
+        "libkern/memchr.c",
+        "libkern/random.c",
+        "libkern/scanc.c",
+        "libkern/strsep.c",
+        "libkern/url_encode.c",
+    ],
+    copts = COMMON_KERNEL_FLAGS + X86_64_FLAGS + [
+        "-DBSD_KERNEL_PRIVATE=1",
+    ],
+    deps = ["//:common_headers"],
+    linkstatic = True,
+)
+
+cc_library(
+    name = "bsd_core",
+    srcs = [
+        "kern/kern_proc.c",
+        "dev/i386/km.c",
+        ":sysent_c",
+        ":syscalls_c",
+    ],
+    copts = COMMON_KERNEL_FLAGS + X86_64_FLAGS + [
+        "-DBSD_KERNEL_PRIVATE=1",
+    ],
+    deps = ["//:common_headers"],
+    linkstatic = True,
+)

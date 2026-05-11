@@ -64,7 +64,7 @@
  */
 
 #include <mach/machine/vm_types.h>
-#include <mach/vm_map.h>
+#include <mach/vm_map_server.h>
 #include <kern/startup.h>
 #include <kern/zalloc_internal.h>
 #include <kern/kext_alloc.h>

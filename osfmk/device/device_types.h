@@ -124,7 +124,9 @@ typedef uint64_t                io_async_ref64_t[8];
 
 #ifdef MACH_KERNEL_PRIVATE
 
+#ifndef __IOKIT_PORTS_DEFINED__
 typedef struct IOObject * io_object_t;
+#endif
 typedef struct IOMachPort * io_kobject_t;
 typedef io_object_t io_connect_t;
 typedef io_object_t io_ident_t;

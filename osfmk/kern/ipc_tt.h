@@ -315,5 +315,8 @@ extern task_suspension_token_t convert_port_to_task_suspension_token_mig(
 extern task_suspension_token_t convert_port_to_task_suspension_token_kernel(
 	ipc_port_t              port);
 
+extern kern_return_t task_get_special_port(task_t task, int which, ipc_port_t *portp);
+extern kern_return_t task_set_special_port(task_t task, int which, ipc_port_t port);
+
 #endif
 #endif  /* _KERN_IPC_TT_H_ */

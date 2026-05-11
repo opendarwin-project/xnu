@@ -654,7 +654,7 @@ extern task_control_port_options_t task_get_control_port_options(task_t task);
 extern task_exc_guard_behavior_t task_exc_guard_default;
 extern size_t proc_and_task_size;
 extern void  *get_bsdtask_info(task_t t);
-extern void *task_get_proc_raw(task_t task);
+extern void  *task_get_proc_raw(task_t task);
 static inline void
 task_require(struct task *task)
 {

@@ -1,0 +1,47 @@
+load("@rules_cc//cc:defs.bzl", "cc_library")
+load("//bazel:kernel_config.bzl", "COMMON_KERNEL_FLAGS", "X86_64_FLAGS")
+
+package(default_visibility = ["//visibility:public"])
+
+filegroup(
+    name = "libkern_headers",
+    srcs = glob(["**/*.h"]),
+)
+
+cc_library(
+    name = "stack_protector",
+    srcs = ["stack_protector.c"],
+    copts = COMMON_KERNEL_FLAGS + X86_64_FLAGS,
+    deps = ["//:common_headers"],
+    linkstatic = True,
+)
+
+cc_library(
+    name = "atomic_operations",
+    srcs = ["gen/OSAtomicOperations.c"],
+    copts = COMMON_KERNEL_FLAGS + X86_64_FLAGS,
+    deps = ["//:common_headers"],
+    linkstatic = True,
+)
+
+cc_library(
+    name = "kernel_mach_header_support",
+    srcs = ["kernel_mach_header.c"],
+    copts = COMMON_KERNEL_FLAGS + X86_64_FLAGS,
+    deps = ["//:common_headers"],
+    linkstatic = True,
+)
+
+cc_library(
+    name = "os_log_support",
+    srcs = [
+        "os/log.c",
+        "//bsd:kern/subr_log.c",
+    ],
+    copts = COMMON_KERNEL_FLAGS + X86_64_FLAGS + [
+        "-DBSD_KERNEL_PRIVATE=1",
+        "-DCONFIG_MSG_BSIZE=131072",
+    ],
+    deps = ["//:common_headers"],
+    linkstatic = True,
+)

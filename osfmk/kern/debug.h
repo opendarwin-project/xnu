@@ -29,6 +29,8 @@
 #ifndef _KERN_DEBUG_H_
 #define _KERN_DEBUG_H_
 
+#ifndef ASSEMBLER
+
 #include <kern/kcdata.h>
 
 #include <sys/appleapiopts.h>
@@ -983,5 +985,7 @@ extern void panic_lockdown_record_debug_data(void);
 #endif  /* XNU_KERNEL_PRIVATE */
 
 __END_DECLS
+
+#endif /* ASSEMBLER */
 
 #endif  /* _KERN_DEBUG_H_ */
