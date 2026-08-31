@@ -92,6 +92,7 @@
 #endif
 #include <kern/smr.h>
 #include <kern/startup.h>
+#include <pexpert/arm64/board_config.h>
 #include <kern/task.h>
 #include <kern/thread.h>
 #include <kern/timer.h>
@@ -918,6 +919,7 @@ kernel_bootstrap_thread(void)
 	/*
 	 *	Start the user bootstrap.
 	 */
+	printf("kernel_bootstrap: calling bsd_init...\n");
 #ifdef  MACH_BSD
 	bsd_init();
 #endif
@@ -1143,3 +1145,4 @@ scale_setup(void)
 
 	bsd_scale_setup(scale);
 }
+// qemu-startup-debug-v1

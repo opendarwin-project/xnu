@@ -332,6 +332,15 @@ vfsinit(void)
 	 */
 	vfs_op_init();
 	vfs_opv_init();   /* finish the job */
+
+	/*
+	 * Register Apple's msdosfs (external/msdosfs) via the same vfs_fsadd
+	 * path the kext uses at kmod start. Linked into mach_kernel.
+	 */
+	{
+		extern int msdosfs_module_start(void *ki, void *data);
+		(void) msdosfs_module_start(NULL, NULL);
+	}
 	/*
 	 * Initialize each file system type in the static list,
 	 * until the first NULL ->vfs_vfsops is encountered.

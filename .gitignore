@@ -1,0 +1,17 @@
+/build/
+/build_*/
+.cache/
+.ruff_cache/
+.DS_Store
+rust-project.json
+compile_commands.json
+*.pyc
+.ninja_*
+/xnu-build
+/build.ninja
+target/
+.build/
+/external
+/subprojects/*
+!/subprojects/packagefiles
+!/subprojects/*.wrap

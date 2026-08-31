@@ -164,6 +164,16 @@ mach_vm_allocate_external(
 	return mach_vm_allocate_kernel(map, addr, size, vmk_flags);
 }
 
+kern_return_t
+mach_vm_allocate(
+	vm_map_t                map,
+	mach_vm_offset_ut      *addr,
+	mach_vm_size_ut         size,
+	int                     flags)
+{
+	return mach_vm_allocate_external(map, addr, size, flags);
+}
+
 /*
  *	vm_allocate
  *	Legacy routine that allocates "zero fill" memory in the specfied
@@ -2374,7 +2384,14 @@ mach_vm_range_create(
  * despite not being exported in the symbol sets.
  */
 
-#if defined(__x86_64__)
+/*
+ * Plain-named (non-"_external") forwarding wrappers. MIG's KERNEL_SERVER
+ * suffixing (see vm_map.defs/mach_vm.defs) routes RPC dispatch to the
+ * "_external" (sanitized-argument) symbols, but several kernel-internal
+ * callers (kern_stackshot.c, vm_pageout.c, IOMemoryDescriptor.cpp,
+ * dtrace_ptss.c, ...) call the plain names directly as ordinary C calls,
+ * on every architecture, not just x86_64.
+ */
 
 extern typeof(mach_vm_remap_external) mach_vm_remap;
 extern typeof(mach_vm_map_external) mach_vm_map;
@@ -2435,4 +2452,21 @@ vm_map(
 	           cur_protection, max_protection, inheritance);
 }
 
-#endif /* __x86_64__ */
+kern_return_t
+vm_allocate(
+	vm_map_t                target_map,
+	vm_offset_ut           *addr,
+	vm_size_ut               size,
+	int                      flags)
+{
+	return vm_allocate_external(target_map, addr, size, flags);
+}
+
+kern_return_t
+mach_vm_deallocate(
+	vm_map_t                target_map,
+	mach_vm_offset_ut       start,
+	mach_vm_size_ut         size)
+{
+	return mach_vm_deallocate_external(target_map, start, size);
+}

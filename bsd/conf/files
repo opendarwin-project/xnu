@@ -67,6 +67,7 @@ OPTIONS/fdesc				optional fdesc
 OPTIONS/fifo				optional fifo
 OPTIONS/devfs				optional devfs
 OPTIONS/routefs				optional routefs
+OPTIONS/mockfs				optional mockfs
 OPTIONS/crypto				optional crypto
 OPTIONS/fs_compression		optional fs_compression
 

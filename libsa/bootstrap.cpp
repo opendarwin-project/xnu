@@ -202,7 +202,8 @@ KLDBootstrap::readStartupExtensions(void)
 	 * has handed us.
 	 */
 	prelinkInfoSect = getsectbynamefromheader(mh, kPrelinkInfoSegment, kPrelinkInfoSection);
-	if (prelinkInfoSect->size) {
+	/* Non-prelinked (QEMU): no __PRELINK_INFO section; pointer is NULL. */
+	if (prelinkInfoSect && prelinkInfoSect->size) {
 		readPrelinkedExtensions(mh, KCKindPrimary);
 	} else {
 		readBooterExtensions();
@@ -680,16 +681,18 @@ KLDBootstrap::readBuiltinPersonalities(void)
 	    kOSKextLogStepLevel |
 	    kOSKextLogLoadFlag,
 	    "Reading built-in kernel personalities for I/O Kit drivers.");
+	IOLog("KLDBootstrap: readBuiltinPersonalities\n");
 
-	/* Look in the __BUILTIN __info segment for an array of Info.plist
-	 * entries. For each one, extract the personalities dictionary, add
-	 * it to our array, then push them all (without matching) to
-	 * the IOCatalogue. This can be used to augment the personalities
-	 * in gIOKernelConfigTables, especially when linking entire kexts into
-	 * the mach_kernel image.
+	/* Look in the __TEXT __builtin_info section for an array of
+	 * Info.plist entries. For each one, extract the personalities
+	 * dictionary, add it to our array, then push them all (without
+	 * matching) to the IOCatalogue. This can be used to augment the
+	 * personalities in gIOKernelConfigTables, especially when linking
+	 * entire kexts into the mach_kernel image.
 	 */
-	infosect   = getsectbyname("__BUILTIN", "__info");
+	infosect   = getsectbyname("__TEXT", "__builtin_info");
 	if (!infosect) {
+		IOLog("KLDBootstrap: no __TEXT,__builtin_info section\n");
 		// this isn't fatal
 		goto finish;
 	}
@@ -711,8 +714,10 @@ KLDBootstrap::readBuiltinPersonalities(void)
 		    kOSKextLogErrorLevel |
 		    kOSKextLogLoadFlag,
 		    "Error unserializing built-in personalities: %s.", errorCString);
+		IOLog("KLDBootstrap: unserialize builtin personalities failed: %s\n", errorCString);
 		goto finish;
 	}
+	IOLog("KLDBootstrap: %u builtin Info.plist entries\n", builtinExtensions->getCount());
 
 	// estimate 3 personalities per Info.plist/kext
 	count = builtinExtensions->getCount();

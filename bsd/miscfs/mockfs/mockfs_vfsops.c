@@ -126,6 +126,8 @@ mockfs_mountroot(mount_t mp, vnode_t rvp, __unused vfs_context_t ctx)
 	mockfs_mount_data->mockfs_root = root_fsnode;
 	mp->mnt_data = (typeof(mp->mnt_data))mockfs_mount_data;
 
+	printf("mockfs_mountroot: successfully mounted mockfs on rvp %p\n", rvp);
+
 done:
 	if (rvalue) {
 		if (file_fsnode) {
