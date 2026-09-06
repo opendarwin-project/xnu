@@ -3720,6 +3720,16 @@ IORPCMessageFromMachReply(IORPCMessageMach * msg)
 	return (IORPCMessage *)(uintptr_t) desc;
 }
 
+/* OpenDarwin/meson: the iig-generated driverkit code (from Apple's
+ * templates) calls IORPCMessageFromMach(), while this fork's kernel side
+ * names the helper IORPCMessageFromMachReply().  Provide the Apple-named
+ * wrapper for kernel links; reply is unused in the kernel path. */
+IORPCMessage *
+IORPCMessageFromMach(IORPCMessageMach * msg, bool __unused reply)
+{
+	return IORPCMessageFromMachReply(msg);
+}
+
 ipc_port_t
 IOUserServer::copySendRightForObject(OSObject * object, ipc_kobject_type_t type)
 {

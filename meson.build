@@ -761,7 +761,6 @@ xnu_lastkernelconstructor = static_library(
 kernel_libs += [xnu_lastkernelconstructor]
 
 # --- Tools and Userspace ---
-subdir('tools')
 subdir('userspace')
 
 # --- Final Kernel Link ---
@@ -788,6 +787,7 @@ ldflags = [
     '-Wl,-segment_order,__TEXT:__DATA_CONST:__DATA_SPTM:__TEXT_EXEC:__TEXT_BOOT_EXEC:__KLD:__PPLTEXT:__PPLTRAMP:__PPLDATA_CONST:__LASTDATA_CONST:__LAST:__PPLDATA:__KLDDATA:__DATA:__HIBDATA:__BOOTDATA:__LINKEDIT',
     '-Wl,-headerpad,0x1000',
     '-Wl,-segaddr,__LINKEDIT,' + linkedit_addr,
+    '-Wl,-no_fixup_chains,',
     '-Wl,-segprot,__LAST,r-x,r-x',
     '-Wl,-segprot,__KLDDATA,rw-,rw-',
     '-Wl,-u,_g_corecrypto_kmod_info',
@@ -829,22 +829,3 @@ kernelcache = custom_target(
     build_by_default: true,
 )
 
-# QEMU execution target
-qemu_script = files('tools/qemu.py')
-qemu_deps = [kernelcache, init_bin]
-if cargo.found()
-    qemu_deps += [qemu_boot_target]
-endif
-
-run_target(
-    'qemu',
-    command: [
-        python,
-        qemu_script,
-        '-B',
-        buildroot,
-        '--cpu',
-        board['cpu'],
-    ],
-    depends: qemu_deps,
-)

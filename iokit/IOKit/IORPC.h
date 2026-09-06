@@ -234,6 +234,12 @@ struct IORPC {
 };
 typedef struct IORPC IORPC;
 
+#ifdef KERNEL
+/* OpenDarwin/meson: kernel-side driverkit code (iig-generated) needs the
+ * Apple-named helper; the fork implements IORPCMessageFromMachReply(). */
+IORPCMessage *IORPCMessageFromMach(IORPCMessageMach * msg, bool reply);
+#endif /* KERNEL */
+
 enum {
 	kOSClassCanRemote   = 0x00000001,
 };
