@@ -2444,7 +2444,7 @@ OSMetaClassBase::Invoke(IORPC rpc)
 	IORPCMessage    * message;
 
 	assert(rpc.sendSize >= (sizeof(IORPCMessageMach) + sizeof(IORPCMessage)));
-	message = rpc.kernelContent;
+	message = IORPCMessageFromMach(rpc.message, false);
 	if (!message) {
 		return kIOReturnIPCError;
 	}
@@ -3680,15 +3680,14 @@ IOUserServer::rpc(IORPC rpc)
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-static IORPCMessage *
-IORPCMessageFromMachReply(IORPCMessageMach * msg)
+IORPCMessage *
+IORPCMessageFromMach(IORPCMessageMach * msg, bool reply)
 {
 	mach_msg_size_t              idx, count;
 	mach_msg_port_descriptor_t * desc;
 	mach_msg_port_descriptor_t * maxDesc;
 	size_t                       size, msgsize;
 	bool                         upgrade;
-	bool                         reply = true;
 
 	msgsize = msg->msgh.msgh_size;
 	count   = msg->msgh_body.msgh_descriptor_count;
@@ -3720,14 +3719,10 @@ IORPCMessageFromMachReply(IORPCMessageMach * msg)
 	return (IORPCMessage *)(uintptr_t) desc;
 }
 
-/* OpenDarwin/meson: the iig-generated driverkit code (from Apple's
- * templates) calls IORPCMessageFromMach(), while this fork's kernel side
- * names the helper IORPCMessageFromMachReply().  Provide the Apple-named
- * wrapper for kernel links; reply is unused in the kernel path. */
-IORPCMessage *
-IORPCMessageFromMach(IORPCMessageMach * msg, bool __unused reply)
+static IORPCMessage *
+IORPCMessageFromMachReply(IORPCMessageMach * msg)
 {
-	return IORPCMessageFromMachReply(msg);
+	return IORPCMessageFromMach(msg, true);
 }
 
 ipc_port_t

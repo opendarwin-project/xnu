@@ -1,7 +1,7 @@
 project(
     'xnu',
     ['c', 'cpp'],
-    version: '24.0.0',
+    version: '26.0.0',
     meson_version: '>=1.12.0',
     default_options: [
         'c_std=gnu17',
@@ -778,6 +778,8 @@ ldflags = [
     '-Wl,-segalign,0x1000',
     '-Wl,-pagezero_size,0x0',
     '-Wl,-rename_section,__TEXT,__text,__TEXT_EXEC,__text',
+    '-Wl,-rename_section,__TEXT,__stubs,__TEXT_EXEC,__stubs',
+    '-Wl,-rename_section,__TEXT,__StaticInit,__TEXT_EXEC,__text',
     '-Wl,-rename_section,__DATA,__const,__DATA_CONST,__const',
     '-Wl,-rename_section,__DATA,__mod_init_func,__DATA_CONST,__mod_init_func',
     '-Wl,-rename_section,__DATA,__mod_term_func,__DATA_CONST,__mod_term_func',
@@ -787,7 +789,7 @@ ldflags = [
     '-Wl,-segment_order,__TEXT:__DATA_CONST:__DATA_SPTM:__TEXT_EXEC:__TEXT_BOOT_EXEC:__KLD:__PPLTEXT:__PPLTRAMP:__PPLDATA_CONST:__LASTDATA_CONST:__LAST:__PPLDATA:__KLDDATA:__DATA:__HIBDATA:__BOOTDATA:__LINKEDIT',
     '-Wl,-headerpad,0x1000',
     '-Wl,-segaddr,__LINKEDIT,' + linkedit_addr,
-    '-Wl,-no_fixup_chains,',
+    '-Wl,-no_fixup_chains',
     '-Wl,-segprot,__LAST,r-x,r-x',
     '-Wl,-segprot,__KLDDATA,rw-,rw-',
     '-Wl,-u,_g_corecrypto_kmod_info',
