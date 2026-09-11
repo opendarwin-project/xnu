@@ -5396,12 +5396,7 @@ IOService::publishHiddenMedia(IOService * parent)
 	bool                wasHiding;
 
 	iomediaClass = OSMetaClass::getMetaClassWithName(gIOMediaKey);
-	if (!iomediaClass) {
-		// Boards without an IOStorageFamily/IOMedia kext (e.g. drivers/rust-vfs's
-		// in-kernel FAT32 driver) never register the IOMedia class at all, so
-		// there is nothing to unhide/apply to.
-		return;
-	}
+	assert(iomediaClass);
 
 	LOCKWRITENOTIFY();
 	wasHiding = gIOServiceHideIOMedia;
@@ -5453,13 +5448,8 @@ IOService::setRootMedia(IOService * root)
 	const OSMetaClass * ioblockstoragedriverClass;
 	bool unhide;
 
-	kprintf("setRootMedia: root=%p\n", root);
 	ioblockstoragedriverClass = OSMetaClass::getMetaClassWithName(gIOBlockStorageDriverKey);
-	if (!ioblockstoragedriverClass) {
-		/* IOStorageFamily can be dead-stripped from a static mach_kernel. */
-		kprintf("setRootMedia: IOBlockStorageDriver class missing\n");
-		root = NULL;
-	}
+	assert(ioblockstoragedriverClass);
 
 	while (root) {
 		if (root->metaCast(ioblockstoragedriverClass)) {

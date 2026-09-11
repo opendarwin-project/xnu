@@ -1735,7 +1735,7 @@ IODTPlatformExpert::processTopLevel( IORegistryEntry * rootEntry )
 	}
 
 	publishNVRAM();
-	/* QEMU/OSS DTs often have no /options node; createNVRAM() may still fail. */
+	assert(gIOOptionsEntry != NULL); // subclasses that do their own NVRAM initialization shouldn't be calling this
 	dtNVRAM = gIOOptionsEntry;
 
 	// Publish the cpus.
@@ -2335,49 +2335,6 @@ IOPlatformDevice::getResources( void )
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
 /*********************************************************************
-* AppleARMPE class
-*********************************************************************/
-
-class AppleARMPE : public IODTPlatformExpert {
-	OSDeclareDefaultStructors(AppleARMPE);
-
-public:
-	virtual IOService * probe(IOService * provider, SInt32 * score) APPLE_KEXT_OVERRIDE;
-	virtual bool start(IOService * provider) APPLE_KEXT_OVERRIDE;
-	virtual const char * deleteList(void) APPLE_KEXT_OVERRIDE;
-	virtual const char * excludeList(void) APPLE_KEXT_OVERRIDE;
-};
-
-OSDefineMetaClassAndStructors(AppleARMPE, IODTPlatformExpert);
-
-IOService *
-AppleARMPE::probe(IOService * provider, SInt32 * score)
-{
-	if (!IOPlatformExpert::probe(provider, score)) {
-		return NULL;
-	}
-	return this;
-}
-
-bool
-AppleARMPE::start(IOService * provider)
-{
-	return IODTPlatformExpert::start(provider);
-}
-
-const char *
-AppleARMPE::deleteList(void)
-{
-	return "";
-}
-
-const char *
-AppleARMPE::excludeList(void)
-{
-	return "chosen,memory-map";
-}
-
-/*********************************************************************
 * IOPanicPlatform class
 *
 * If no legitimate IOPlatformDevice matches, this one does and panics
@@ -2409,51 +2366,3 @@ IOPanicPlatform::start(IOService * provider)
 
 	return false;
 }
-
-#if OSS_HARDWARE
-/*********************************************************************
-* IOOSSPlatformExpert class
-*
-* Minimal, embedded platform expert for non-Apple-silicon "OSS_HARDWARE"
-* boards (QEMU, SUPERBIRD, IPAD41, ...). These boot from a bespoke,
-* minimal device tree that does not necessarily satisfy AppleARMPE's
-* IONameMatch("device-tree") requirement, so AppleARMPE may never even
-* become a probe candidate for IOPlatformExpertDevice on these boards.
-*
-* Without any personality able to match, IOPlatformExpertDevice is left
-* with no attached IOPlatformExpert at all: callers such as
-* IOSecureBSDRoot() that legitimately wait on
-* IOService::serviceMatching("IOPlatformExpert") then block for the
-* full timeout waiting for a service that can never appear.
-*
-* This personality matches IOPlatformExpertDevice unconditionally (no
-* IONameMatch) at a score below AppleARMPE's, so any board with a
-* well-formed device tree still prefers AppleARMPE, while OSS_HARDWARE
-* boards always end up with a live, attached, generic IOPlatformExpert.
-*********************************************************************/
-
-class IOOSSPlatformExpert : public IOPlatformExpert {
-	OSDeclareDefaultStructors(IOOSSPlatformExpert);
-
-public:
-	virtual IOService * probe(IOService * provider, SInt32 * score) APPLE_KEXT_OVERRIDE;
-	virtual bool start(IOService * provider) APPLE_KEXT_OVERRIDE;
-};
-
-OSDefineMetaClassAndStructors(IOOSSPlatformExpert, IOPlatformExpert);
-
-IOService *
-IOOSSPlatformExpert::probe(IOService * provider, SInt32 * score)
-{
-	if (!IOPlatformExpert::probe(provider, score)) {
-		return NULL;
-	}
-	return this;
-}
-
-bool
-IOOSSPlatformExpert::start(IOService * provider)
-{
-	return IOPlatformExpert::start(provider);
-}
-#endif /* OSS_HARDWARE */

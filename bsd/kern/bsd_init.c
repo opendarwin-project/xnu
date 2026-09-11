@@ -267,7 +267,6 @@ extern void IOSecureBSDRoot(const char * rootName);
 extern kern_return_t IOKitBSDInit(void );
 extern boolean_t IOSetRecoveryBoot(bsd_bootfail_mode_t, uuid_t, boolean_t);
 extern void kminit(void);
-extern kern_return_t pthread_start(void *ki, void *d); /* com.apple.kec.pthread */
 extern void bsd_bufferinit(void);
 extern void throttle_init(void);
 
@@ -741,16 +740,6 @@ bsd_init(void)
 	/* Initialize for async IO */
 	bsd_init_kprintf("calling aio_init\n");
 	aio_init();
-
-	/*
-	 * Bootstrap Apple's pthread kext (external/libpthread kern/kern_init.c).
-	 * A shipping system loads pthread.kext here; we are linked in, so
-	 * call pthread_start() which pthread_kext_register()s the function table
-	 * before pthread_init() consumes it.
-	 */
-	bsd_init_kprintf("calling pthread_start\n");
-	pthread_start(NULL, NULL);
-	bsd_init_kprintf("pthread_start returned\n");
 
 	bsd_init_kprintf("calling pthread_init\n");
 	pthread_init();

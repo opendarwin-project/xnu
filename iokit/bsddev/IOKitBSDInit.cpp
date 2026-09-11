@@ -821,7 +821,6 @@ IOFindBSDRoot( char * rootName, unsigned int rootNameSize,
 				rootName[2] = (char) dchar;                                                     /* Build root name */
 				rootName[3] = 0;                                                                /* Build root name */
 				IOLog("BSD root: %s, major %d, minor %d\n", rootName, major(*root), minor(*root));
-				kprintf("IOFindBSDRoot: md root configured\n");
 				*oflags = 0;                                                                    /* Show that this is not network */
 
 #if CONFIG_KDP_INTERACTIVE_DEBUGGING
@@ -837,26 +836,6 @@ IOFindBSDRoot( char * rootName, unsigned int rootNameSize,
 			}
 			panic("IOFindBSDRoot: specified root memory device, %s, has not been configured", rdBootVar); /* Not there */
 		}
-	}
-
-//
-//	Boards without an IOStorageFamily/IOMedia stack (e.g. drivers/rust-vfs's
-//	in-kernel FAT32 driver, registered via VFC_VFSCANMOUNTROOT) have no
-//	IOMedia object to match against, so the generic "wait for Apple_HFS
-//	IOMedia" path below blocks forever. "rd=fat0" skips IOKit matching
-//	entirely: bdevvp() only needs a non-NODEV dev_t to create the root
-//	vnode wrapper (fat32_mountroot ignores it and reads the boot disk
-//	directly via VirtIO), so any placeholder major/minor works here.
-//
-	if (rdBootVar[0] && !strcmp(rdBootVar, "fat0")) {
-		OSSafeReleaseNULL(matching);
-		service = NULL;
-		mediaProperty = NULL;
-		*root = makedev(6, 0);
-		strlcpy(rootName, "fat0", rootNameSize);
-		*oflags = 0;
-		IOLog("BSD root: %s (IOKit device matching bypassed)\n", rootName);
-		goto iofrootx;
 	}
 
 	if ((!matching) && rdBootVar[0]) {
@@ -1072,11 +1051,7 @@ IOSecureBSDRoot(const char * rootName)
 	assert(matching);
 	pe = (IOPlatformExpert *) IOService::waitForMatchingService(matching, 30ULL * kSecondScale);
 	matching->release();
-	if (!pe) {
-		kprintf("IOSecureBSDRoot: no IOPlatformExpert, skipping\n");
-		functionName->release();
-		return;
-	}
+	assert(pe);
 	// Returns kIOReturnNotPrivileged is the root device is not secure.
 	// Returns kIOReturnUnsupported if "SecureRootName" is not implemented.
 	result = pe->callPlatformFunction(functionName, false, (void *)rootName, (void *)NULL, (void *)NULL, (void *)NULL);
