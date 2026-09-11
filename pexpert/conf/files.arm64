@@ -6,6 +6,9 @@ pexpert/arm/pe_init.c                  standard
 pexpert/arm/pe_kprintf.c               standard
 pexpert/arm/pe_serial.c                standard
 
+pexpert/gic/gic.c                      optional not applecyclone
+pexpert/aic/aic.c                      optional applecyclone
+
 pexpert/arm/hwtrace/hwtrace.c         standard
 pexpert/arm/hwtrace/apt_msg.c         standard
 

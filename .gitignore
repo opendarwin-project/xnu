@@ -1,0 +1,12 @@
+/build/
+/build_*/
+.cache/
+.ruff_cache/
+.DS_Store
+rust-project.json
+compile_commands.json
+*.pyc
+target/
+.build/
+/external
+BUILD/

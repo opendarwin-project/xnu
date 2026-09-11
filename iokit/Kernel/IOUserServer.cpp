@@ -2444,7 +2444,7 @@ OSMetaClassBase::Invoke(IORPC rpc)
 	IORPCMessage    * message;
 
 	assert(rpc.sendSize >= (sizeof(IORPCMessageMach) + sizeof(IORPCMessage)));
-	message = rpc.kernelContent;
+	message = IORPCMessageFromMach(rpc.message, false);
 	if (!message) {
 		return kIOReturnIPCError;
 	}
@@ -3680,15 +3680,14 @@ IOUserServer::rpc(IORPC rpc)
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-static IORPCMessage *
-IORPCMessageFromMachReply(IORPCMessageMach * msg)
+IORPCMessage *
+IORPCMessageFromMach(IORPCMessageMach * msg, bool reply)
 {
 	mach_msg_size_t              idx, count;
 	mach_msg_port_descriptor_t * desc;
 	mach_msg_port_descriptor_t * maxDesc;
 	size_t                       size, msgsize;
 	bool                         upgrade;
-	bool                         reply = true;
 
 	msgsize = msg->msgh.msgh_size;
 	count   = msg->msgh_body.msgh_descriptor_count;
@@ -3718,6 +3717,12 @@ IORPCMessageFromMachReply(IORPCMessageMach * msg)
 		desc = (typeof(desc))(((uintptr_t) desc) + size);
 	}
 	return (IORPCMessage *)(uintptr_t) desc;
+}
+
+static IORPCMessage *
+IORPCMessageFromMachReply(IORPCMessageMach * msg)
+{
+	return IORPCMessageFromMach(msg, true);
 }
 
 ipc_port_t

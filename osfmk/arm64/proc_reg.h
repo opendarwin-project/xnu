@@ -251,6 +251,27 @@
 /* D-Cache. */
 #define MMU_CLINE   6
 
+#elif defined (SUPERBIRD)
+
+/* Cortex-A53: 32KB 2-way I-cache, 32KB 4-way D-cache, 64-byte lines. */
+#define MMU_I_CLINE 6
+
+#define MMU_CLINE   6
+
+#elif defined (QEMU)
+
+/* Cortex-A53 (QEMU virt -cpu cortex-a53): 32KB 2-way I-cache, 32KB 4-way
+ * D-cache, 64-byte lines - same geometry as SUPERBIRD's real A53. */
+#define MMU_I_CLINE 6
+
+#define MMU_CLINE   6
+#elif defined (APPLECYCLONE)
+
+/* Cyclone (A7): 64KB 4-way I-cache, 64KB 4-way D-cache, 64-byte lines. */
+#define MMU_I_CLINE 6
+
+#define MMU_CLINE   6
+
 #else
 #error processor not supported
 #endif
@@ -1973,7 +1994,6 @@
 #define ARM_4K_TT_L3_OFFMASK    0x0000000000000fffULL /* offset within L3 PTE */
 #define ARM_4K_TT_L3_SHIFT      12                    /* page descriptor shift */
 #define ARM_4K_TT_L3_INDEX_MASK 0x00000000001ff000ULL /* mask for page descriptor index */
-
 #ifdef __ARM_16K_PG__
 
 /* Native L0 defines */

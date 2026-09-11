@@ -51,3 +51,11 @@ pmap_abandon_measurement(void)
 	pmap_interrupts_restore(istate);
 #endif /* SCHED_HYGIENE_DEBUG */
 }
+
+#if SCHED_HYGIENE_DEBUG && (DEBUG || DEVELOPMENT)
+bool
+pmap_pending_preemption(void)
+{
+	return _pmap_pending_preemption_real();
+}
+#endif /* SCHED_HYGIENE_DEBUG && (DEBUG || DEVELOPMENT) */

@@ -370,6 +370,15 @@ random_cpu_init(int cpu)
 __mockable void
 read_random(void * buffer, u_int numbytes)
 {
+	/* corecrypto kext normally registers the Fortuna PRNG via
+	 * register_and_init_prng() during IOKit matching. A non-prelinked
+	 * kernel (QEMU) never loads that kext, so prng_funcs is still
+	 * BSS-zero and refresh/generate would instruction-abort at 0.
+	 * Keep serving the early NIST HMAC-SHA256 DRBG instead. */
+	if (__improbable(!prng_ready)) {
+		read_erandom(buffer, numbytes);
+		return;
+	}
 	prng_funcs.refresh(prng_ctx);
 	read_random_generate(buffer, numbytes);
 }
@@ -428,6 +437,10 @@ write_random(void * buffer, u_int numbytes)
 		memcpy(seed, buffer, numbytes);
 	}
 
+	if (__improbable(!prng_ready)) {
+		cc_clear(sizeof(seed), seed);
+		return 0;
+	}
 	prng_funcs.reseed(prng_ctx, sizeof(seed), seed);
 	cc_clear(sizeof(seed), seed);
 

@@ -498,7 +498,7 @@ bsd_init(void)
 	check_for_failure_injection(XNU_STAGE_BSD_INIT_START);
 #endif
 
-#define DEBUG_BSDINIT 0
+#define DEBUG_BSDINIT 1
 
 #if DEBUG_BSDINIT
 #define bsd_init_kprintf(x, ...) kprintf("bsd_init: " x, ## __VA_ARGS__)
@@ -741,7 +741,9 @@ bsd_init(void)
 	bsd_init_kprintf("calling aio_init\n");
 	aio_init();
 
+	bsd_init_kprintf("calling pthread_init\n");
 	pthread_init();
+	bsd_init_kprintf("pthread_init returned\n");
 	/* POSIX Shm and Sem */
 	bsd_init_kprintf("calling pshm_cache_init\n");
 	pshm_cache_init();
@@ -913,7 +915,13 @@ bsd_init(void)
 		printf("cannot mount root, errno = %d\n", err);
 	}
 
-	IOSecureBSDRoot(rootdevice);
+	bsd_init_kprintf("calling IOSecureBSDRoot\n");
+	if (bsd_rooted_ramdisk()) {
+		bsd_init_kprintf("ramdisk root, skipping IOSecureBSDRoot\n");
+	} else {
+		IOSecureBSDRoot(rootdevice);
+	}
+	bsd_init_kprintf("IOSecureBSDRoot returned\n");
 
 	mountlist.tqh_first->mnt_flag |= MNT_ROOTFS;
 
@@ -1114,6 +1122,7 @@ bsd_autoconf(void)
 {
 	kprintf("bsd_autoconf: calling kminit\n");
 	kminit();
+	kprintf("bsd_autoconf: kminit done\n");
 
 	/*
 	 * Early startup for bsd pseudodevices.
@@ -1121,11 +1130,14 @@ bsd_autoconf(void)
 	{
 		struct pseudo_init *pi;
 
-		for (pi = pseudo_inits; pi->ps_func; pi++) {
+		int pidx = 0;
+		for (pi = pseudo_inits; pi->ps_func; pi++, pidx++) {
+			kprintf("bsd_autoconf: pseudo_init[%d] count=%d\n", pidx, pi->ps_count);
 			(*pi->ps_func)(pi->ps_count);
+			kprintf("bsd_autoconf: pseudo_init[%d] done\n", pidx);
 		}
 	}
-
+	kprintf("bsd_autoconf: calling IOKitBSDInit\n");
 	return IOKitBSDInit();
 }
 
