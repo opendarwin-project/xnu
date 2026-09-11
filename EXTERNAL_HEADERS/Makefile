@@ -31,7 +31,8 @@ KERNEL_FILES = \
 	stdbool.h	\
 	stddef.h	\
 	stdint.h	\
-	ptrauth.h
+	ptrauth.h \
+	TargetConditionals.h
 
 LIBCXX_DATAFILES = \
 	_inttypes.h \
