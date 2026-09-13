@@ -181,7 +181,8 @@ _tsleep
 _ubc_cs_blob_get
 _vfs_context_current
 _vfs_update_vfsstat
-_vm_allocate:_vm_allocate_external
+_vm_allocate
+_vm_allocate_external
 _vm_deallocate
 _vm_map_deallocate
 _vm_map_unwire

@@ -331,7 +331,7 @@ VM_SANITIZE_ADOPTION_CHECK = $(SRCROOT)/tools/vm_sanitize_enforcement.py
 # Standard BSD tools
 RM = /bin/rm -f
 RMDIR = /bin/rmdir
-CP = /bin/cp
+CP = cp
 MV = /bin/mv
 LN = /bin/ln -fs
 CAT = /bin/cat

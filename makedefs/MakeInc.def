@@ -220,6 +220,7 @@ WARNFLAGS_STD := \
 	-Wno-ms-bitfield-padding \
 	-Wno-partial-availability \
 	-Wno-reserved-id-macro \
+	-Wno-reserved-identifier \
 	-Wno-shift-sign-overflow \
 	-Wno-switch-enum \
 	-Wno-unaligned-access \

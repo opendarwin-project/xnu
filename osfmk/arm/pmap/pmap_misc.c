@@ -27,6 +27,7 @@
  */
 #include <arm/pmap/pmap_internal.h>
 #include <arm/preemption_disable_internal.h>
+#include <sys/code_signing.h>
 
 /**
  * Placeholder for random pmap functionality that doesn't fit into any of the
@@ -50,6 +51,22 @@ pmap_abandon_measurement(void)
 
 	pmap_interrupts_restore(istate);
 #endif /* SCHED_HYGIENE_DEBUG */
+}
+
+int
+pmap_cs_configuration(void)
+{
+	code_signing_config_t config = 0;
+
+	code_signing_configuration(NULL, &config);
+	return (int)config;
+}
+
+bool
+pmap_has_iofilter_protected_write(void)
+{
+	/* QEMU has no guarded I/O monitor. */
+	return false;
 }
 
 #if SCHED_HYGIENE_DEBUG && (DEBUG || DEVELOPMENT)

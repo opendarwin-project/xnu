@@ -26,8 +26,10 @@ _ecc_log_memory_error_delayed
 _ecc_log_record_event
 _get_preemption_level
 _kern_ecc_poll_register
-_mach_vm_map:_mach_vm_map_external
-_mach_vm_remap:_mach_vm_remap_external
+_mach_vm_map
+_mach_vm_map_external
+_mach_vm_remap
+_mach_vm_remap_external
 _mcc_log_memory_error
 _ml_arm_sleep
 _ml_get_abstime_offset
