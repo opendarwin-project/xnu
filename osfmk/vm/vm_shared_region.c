@@ -3302,10 +3302,10 @@ vm_shared_region_slide_page_v3(
 
 		bool isBind = (value & (1ULL << 62)) != 0;
 		if (isBind) {
-#if CONFIG_SPTM
+#if CONFIG_SPTM && __has_feature(ptrauth_calls)
 			pmap_batch_sign_user_ptr(NULL, NULL, 0, 0, 0);
 			assert(preemption_enabled());
-#endif /* CONFIG_SPTM */
+#endif /* CONFIG_SPTM && __has_feature(ptrauth_calls) */
 			return KERN_FAILURE;
 		}
 
@@ -3359,11 +3359,11 @@ vm_shared_region_slide_page_v3(
 		}
 	} while (delta != 0);
 
-#if CONFIG_SPTM
+#if CONFIG_SPTM && __has_feature(ptrauth_calls)
 	/* Sign the leftovers if there's any. */
 	pmap_batch_sign_user_ptr(NULL, NULL, 0, 0, 0);
 	assert(preemption_enabled());
-#endif /* CONFIG_SPTM */
+#endif /* CONFIG_SPTM && __has_feature(ptrauth_calls) */
 
 	return KERN_SUCCESS;
 }
@@ -3572,11 +3572,11 @@ vm_shared_region_slide_page_v5(
 		}
 	} while (delta != 0);
 
-#if CONFIG_SPTM
+#if CONFIG_SPTM && __has_feature(ptrauth_calls)
 	/* Sign the leftovers if there's any. */
 	pmap_batch_sign_user_ptr(NULL, NULL, 0, 0, 0);
 	assert(preemption_enabled());
-#endif /* CONFIG_SPTM */
+#endif /* CONFIG_SPTM && __has_feature(ptrauth_calls) */
 
 	return KERN_SUCCESS;
 }
