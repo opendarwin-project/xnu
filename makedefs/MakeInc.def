@@ -95,7 +95,7 @@ MACHINE_FLAGS_ARM64_T8142 = -DARM64_BOARD_CONFIG_T8142 			-mcpu=apple-m4+memtag+
 
 MACHINE_FLAGS_ARM64_VMAPPLE = -DARM64_BOARD_CONFIG_VMAPPLE              -march=armv8.5a+sme2
 
-MACHINE_FLAGS_ARM64_QEMU = -DARM64_BOARD_CONFIG_QEMU -mcpu=cortex-a53
+MACHINE_FLAGS_ARM64_QEMU = -DARM64_BOARD_CONFIG_QEMU -DOS_FIREHOSE_SPI=1 -mcpu=cortex-a53
 MACHINE_FLAGS_ARM64_SUPERBIRD = -DARM64_BOARD_CONFIG_SUPERBIRD -mcpu=cortex-a53
 MACHINE_FLAGS_ARM64_IPAD41 = -DARM64_BOARD_CONFIG_IPAD41 -mcpu=cyclone
 
@@ -1157,7 +1157,7 @@ LDFILES_KERNEL_ONLY = $(TARGET)/all-kpi.exp $(TARGET)/all-alias.exp $(TARGET)/sy
 # Default runtime libraries to be linked with the kernel
 #
 LD_KERNEL_LIBS	   = -lcc_kext
-LD_KERNEL_ARCHIVES = $(LDFLAGS_KERNEL_SDK) -lfirehose_kernel
+LD_KERNEL_ARCHIVES = $(LDFLAGS_KERNEL_SDK)
 
 # Link binary support library
 ifneq ($(filter $(CURRENT_MACHINE_CONFIG),NONE $(shell echo $(OSSHW_SOCS) | tr a-z A-Z)),)
