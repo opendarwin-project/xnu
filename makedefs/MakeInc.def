@@ -1325,8 +1325,8 @@ USE_LTO = $(LTO_ENABLED_$(CURRENT_KERNEL_CONFIG))
 endif
 
 ifeq ($(USE_LTO),1)
-CFLAGS_GEN	+= -flto -DBUILT_LTO=1
-CXXFLAGS_GEN	+= -flto -DBUILT_LTO=1
+CFLAGS_GEN	+= -flto=thin -DBUILT_LTO=1
+CXXFLAGS_GEN	+= -flto=thin -DBUILT_LTO=1
 LDFLAGS_KERNEL_LTO	= -Wl,-mllvm,-inline-threshold=100
 LDFLAGS_KERNEL_GEN	+= $(LDFLAGS_KERNEL_LTO) -Wl,-object_path_lto,$(TARGET)/lto.o
 LDFLAGS_NOSTRIP_FLAG = -rdynamic
